@@ -1,6 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import { hasPermission, type Role } from "../lib/permissions";
 import { getAuthenticatedUser } from "./expenseHelpers";
 
@@ -92,7 +93,7 @@ export const getExpenseDetail = query({
 
     const usersMap: Record<string, { firstName: string; lastName: string }> = {};
     for (const id of userIds) {
-      const u = await ctx.db.get(id as any);
+      const u = await ctx.db.get(id as Id<"users">);
       if (u) {
         usersMap[id] = { firstName: u.firstName, lastName: u.lastName };
       }
@@ -103,7 +104,7 @@ export const getExpenseDetail = query({
     allVersions.forEach((v) => categoryIds.add(v.categoryId));
     const categoriesMap: Record<string, string> = {};
     for (const id of categoryIds) {
-      const cat = await ctx.db.get(id as any);
+      const cat = await ctx.db.get(id as Id<"categories">);
       if (cat) categoriesMap[id] = cat.name;
     }
 
@@ -165,7 +166,7 @@ export const getPendingQueue = query({
           )
           .unique();
 
-        const submitter = await ctx.db.get(expense.submittedBy);
+        const submitter = await ctx.db.get(expense.submittedBy as Id<"users">);
 
         return {
           _id: expense._id,
@@ -250,7 +251,7 @@ export const getReviewedHistory = query({
           return null;
         }
 
-        const submitter = await ctx.db.get(expense.submittedBy);
+        const submitter = await ctx.db.get(expense.submittedBy as Id<"users">);
 
         return {
           _id: expense._id,

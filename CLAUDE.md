@@ -163,6 +163,7 @@ Seeded data. 7 categories (see Section 7).
 6. **`ExpenseVersions` and `ExpenseHistory` are never updated or deleted** — append-only.
 7. **Withdrawal only pre-review** — withdraw only permitted while `status === "Submitted"`. Once `UnderReview`, withdrawal is locked.
 8. **Zod schemas shared** — client-side form validation and Convex server validators use the same Zod schema. No duplicating validation logic.
+9. **Password minimum 8 characters** — no upper limit. Passwords must be at least 8 characters long; there is no maximum length restriction.
 
 ---
 
@@ -182,8 +183,8 @@ Seeded data. 7 categories (see Section 7).
 ### Test Accounts
 | Role | Name | Email | Password |
 |---|---|---|---|
-| Employee | Alex Morgan | `employee@test.expensetracker.dev` | `TestEmployee@2026!` |
-| Manager | Jordan Lee | `manager@test.expensetracker.dev` | `TestManager@2026!` |
+| Employee | Miles Morales | `miles@employee.dev` | `MilesEmployee@2026!` |
+| Manager | Jack Black | `jack@manager.dev` | `JackManager@2026!` |
 
 Seeded via `convex/seed.ts`. Run with `npx convex run seed`.
 

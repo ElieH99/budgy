@@ -33,15 +33,15 @@ const CATEGORIES = [
 
 const TEST_ACCOUNTS = [
   {
-    firstName: "Alex",
-    lastName: "Morgan",
-    email: "employee@test.expensetracker.dev",
+    firstName: "Miles",
+    lastName: "Morales",
+    email: "miles@employee.dev",
     role: "employee" as const,
   },
   {
-    firstName: "Jordan",
-    lastName: "Lee",
-    email: "manager@test.expensetracker.dev",
+    firstName: "Jack",
+    lastName: "Black",
+    email: "jack@manager.dev",
     role: "manager" as const,
   },
 ] as const;
