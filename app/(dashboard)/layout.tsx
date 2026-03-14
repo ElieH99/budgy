@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LogOut, Receipt } from "lucide-react";
+import { IDLE_TIMEOUT_MS } from "@/lib/constants";
 
 export default function DashboardLayout({
   children,
@@ -18,6 +19,49 @@ export default function DashboardLayout({
   const user = useQuery(api.users.getCurrentUser);
   const { signOut } = useAuthActions();
   const router = useRouter();
+
+  // ── Idle logout (15 min) ────────────────────────────────────────────────
+  const lastActivityRef = useRef(Date.now());
+  const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleSignOut = useCallback(async () => {
+    setSigningOut(true);
+    await signOut();
+    router.replace("/login");
+  }, [signOut, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const resetActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove",
+      "keydown",
+      "mousedown",
+      "touchstart",
+    ];
+    for (const event of events) {
+      window.addEventListener(event, resetActivity);
+    }
+
+    idleTimerRef.current = setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= IDLE_TIMEOUT_MS) {
+        handleSignOut();
+      }
+    }, 30_000); // check every 30 seconds
+
+    return () => {
+      for (const event of events) {
+        window.removeEventListener(event, resetActivity);
+      }
+      if (idleTimerRef.current) {
+        clearInterval(idleTimerRef.current);
+      }
+    };
+  }, [user, handleSignOut]);
 
   // Redirect unauthenticated users (skip if already signing out to avoid double redirect)
   useEffect(() => {
@@ -34,12 +78,6 @@ export default function DashboardLayout({
       </div>
     );
   }
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    await signOut();
-    router.replace("/login");
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">

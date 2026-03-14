@@ -78,6 +78,11 @@ export const CURRENCY_CODES = [
   "NOK", "DKK", "SGD", "HKD", "NZD", "INR", "MXN",
 ] as const;
 
+// ── Idle Timeout ────────────────────────────────────────────────────────────
+
+/** 15 minutes of inactivity before automatic sign-out */
+export const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+
 // ── Status Display Labels ───────────────────────────────────────────────────
 
 export const STATUS_DISPLAY_LABELS: Record<ExpenseStatus, string> = {
