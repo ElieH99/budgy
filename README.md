@@ -12,92 +12,120 @@ This is an internal tool — clarity, correctness, and auditability take priorit
 | Auth | Convex Auth (email/password) |
 | Frontend | Next.js 16 (App Router) |
 | Styling | Tailwind CSS |
-| Components | shadcn/ui (Radix UI) |
+| Components | shadcn/ui (Radix UI) — primary UI building block throughout |
 | Tables | TanStack Table v8 |
 | Forms | React Hook Form + Zod |
 | Dates | date-fns |
 | Language | TypeScript (strict) |
 
-## Prerequisites
-
-- **Node.js** >= 18
-- **npm** (or pnpm)
-- **Convex CLI** — install globally: `npm i -g convex`
-
 ## Local Development
 
+### Prerequisites
+- Node.js 18+
+- A Convex account (free tier is fine): https://convex.dev
+- npm or pnpm
+
+### Setup
+
+1. Clone the repo and install dependencies:
 ```bash
-# 1. Clone the repository
-git clone <repo-url> && cd expense-tracker
-
-# 2. Copy environment variables
-cp .env.example .env.local
-
-# 3. Fill in your Convex deployment URL and auth secret in .env.local
-
-# 4. Install dependencies
+git clone <repo-url>
+cd <project-folder>
 npm install
-
-# 5. Start the Convex dev server (in a separate terminal)
-npx convex dev
-
-# 6. Start the Next.js dev server
-npm run dev
-
-# 7. Open http://localhost:3000
 ```
 
-## Seed Script
+2. Create a `.env.local` file from the example:
+```bash
+cp .env.example .env.local
+```
 
-Seed the database with categories and test accounts:
+3. Create a new Convex project and link it:
+```bash
+npx convex dev
+```
+   This will prompt you to log in and create a project. It will populate `NEXT_PUBLIC_CONVEX_URL` automatically.
 
+4. Add the remaining environment variables to `.env.local`:
+```env
+CONVEX_AUTH_SECRET=<generate a random 32+ char secret>
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+5. Seed the database with categories and test accounts:
 ```bash
 npx convex run seed
 ```
 
-This creates:
-- 7 expense categories (Travel, Accommodation, Meals & Entertainment, etc.)
-- 2 test accounts (see below)
+6. Start the development servers (run both in separate terminals):
+```bash
+# Terminal 1 — Convex backend
+npx convex dev
 
-The script is idempotent — safe to run multiple times.
+# Terminal 2 — Next.js frontend
+npm run dev
+```
+
+7. Open [http://localhost:3000](http://localhost:3000)
+
+### Test Accounts
+
+| Role     | Email                  | Password              |
+|----------|------------------------|-----------------------|
+| Employee | miles@employee.dev     | MilesEmployee@2026!   |
+| Manager  | jack@manager.dev       | JackManager@2026!     |
+| Manager  | mike@manager.dev       | MikeManager@2026!     |
 
 ## Environment Variables
 
-| Variable | Description | Where to find it |
-|---|---|---|
-| `NEXT_PUBLIC_CONVEX_URL` | Your Convex deployment URL | Convex dashboard → Settings |
-| `CONVEX_DEPLOY_KEY` | Deploy key for CI/CD pipelines | Convex dashboard → Settings → Deploy keys |
-| `CONVEX_AUTH_SECRET` | Secret for signing auth tokens | Generate with `openssl rand -hex 32` |
-| `NEXT_PUBLIC_APP_URL` | Public URL of the deployed app | Your Vercel/hosting dashboard |
+| Variable                  | Required | Description                                      |
+|---------------------------|----------|--------------------------------------------------|
+| `NEXT_PUBLIC_CONVEX_URL`  | ✅       | Your Convex deployment URL (set by `convex dev`) |
+| `CONVEX_DEPLOY_KEY`       | ✅ prod  | Convex deploy key (production only)              |
+| `CONVEX_AUTH_SECRET`      | ✅       | Random secret for Convex Auth token signing      |
+| `NEXT_PUBLIC_APP_URL`     | ✅       | Full URL of the app (e.g. https://your-app.vercel.app) |
 
-## Deploying to Vercel
+Never commit `.env.local` or any file containing real secrets.
 
+## Deployment
+
+This app deploys the Next.js frontend to **Vercel** and the backend to **Convex Cloud**. Both are required.
+
+### 1. Deploy Convex backend
 ```bash
-# 1. Push your code to GitHub
-
-# 2. Import the repo in Vercel (vercel.com/new)
-
-# 3. Set environment variables in Vercel project settings:
-#    - NEXT_PUBLIC_CONVEX_URL
-#    - CONVEX_DEPLOY_KEY
-#    - CONVEX_AUTH_SECRET
-#    - NEXT_PUBLIC_APP_URL
-
-# 4. Deploy your Convex backend to production
 npx convex deploy
+```
 
-# 5. Trigger a Vercel deploy (or it will auto-deploy from git push)
+This will:
+- Push your schema, functions, and auth config to Convex Cloud
+- Print your production `NEXT_PUBLIC_CONVEX_URL`
 
-# 6. Seed production data
+After deploying, run the seed script against production **once**:
+```bash
 npx convex run seed --prod
 ```
 
-## Test Accounts
+> ⚠️ Only run the seed once. Running it again will create duplicate categories and accounts.
 
-| Role | Name | Email | Password |
-|---|---|---|---|
-| Employee | Alex Morgan | `employee@test.expensetracker.dev` | `TestEmployee@2026!` |
-| Manager | Jordan Lee | `manager@test.expensetracker.dev` | `TestManager@2026!` |
+### 2. Deploy Next.js to Vercel
+
+1. Push your repo to GitHub (or GitLab/Bitbucket).
+2. Import the project at [vercel.com/new](https://vercel.com/new).
+3. Add the following environment variables in the Vercel dashboard:
+
+   | Variable                  | Value                                      |
+   |---------------------------|--------------------------------------------|
+   | `NEXT_PUBLIC_CONVEX_URL`  | Your production Convex URL                 |
+   | `CONVEX_DEPLOY_KEY`       | From Convex dashboard → Settings → Deploy Keys |
+   | `CONVEX_AUTH_SECRET`      | Same value used during `convex deploy`     |
+   | `NEXT_PUBLIC_APP_URL`     | Your Vercel deployment URL                 |
+
+4. Deploy. Vercel will run `next build` automatically.
+
+### Redeployment
+
+- **Backend changes:** Run `npx convex deploy` then redeploy on Vercel (or trigger via CI).
+- **Frontend-only changes:** Push to your main branch — Vercel redeploys automatically.
+- **Schema changes:** Always deploy Convex first, then Vercel, to avoid function/schema mismatches.
 
 ## Project Structure
 
