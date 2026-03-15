@@ -12,7 +12,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
-import { type ExpenseStatus, EXPENSE_STATUSES } from "@/lib/constants";
+import { type ExpenseStatus } from "@/lib/constants";
 import { formatAmount } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { StatusBadge } from "./StatusBadge";
@@ -26,14 +26,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CategoryFilter } from "@/components/ui/category-filter";
+import { StatusFilter } from "@/components/ui/status-filter";
 
 interface ExpenseRow {
   _id: Id<"expenses">;
@@ -49,12 +43,13 @@ interface ExpenseRow {
 interface ExpenseTableProps {
   onRowClick: (expenseId: Id<"expenses">, index: number) => void;
   onQueueChange?: (queue: Id<"expenses">[]) => void;
-  statusFilter?: string;
-  onStatusFilterChange?: (value: string) => void;
+  /** Controlled multi-select status filter. Empty array = no filter. */
+  selectedStatuses?: string[];
+  onSelectedStatusesChange?: (statuses: string[]) => void;
   allowedStatuses?: string[];
 }
 
-export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFilterProp, onStatusFilterChange, allowedStatuses }: ExpenseTableProps) {
+export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: selectedStatusesProp, onSelectedStatusesChange, allowedStatuses }: ExpenseTableProps) {
   const expenses = useQuery(api.expenses.getMyExpenses);
   const categories = useQuery(api.categories.listCategories);
   const [sorting, setSorting] = useState<SortingState>([
@@ -62,9 +57,9 @@ export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFi
   ]);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [internalStatusFilter, setInternalStatusFilter] = useState("all");
-  const statusFilter = statusFilterProp ?? internalStatusFilter;
-  const setStatusFilter = onStatusFilterChange ?? setInternalStatusFilter;
+  const [internalSelectedStatuses, setInternalSelectedStatuses] = useState<string[]>([]);
+  const selectedStatuses = selectedStatusesProp ?? internalSelectedStatuses;
+  const setSelectedStatuses = onSelectedStatusesChange ?? setInternalSelectedStatuses;
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const amountBounds = useMemo(() => {
@@ -95,7 +90,7 @@ export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFi
         if (!catName || !selectedCategories.includes(catName)) return false;
       }
       if (allowedStatuses && !allowedStatuses.includes(e.status)) return false;
-      if (statusFilter !== "all" && e.status !== statusFilter) return false;
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(e.status)) return false;
       if (amountRange) {
         if (e.amount < amountRange[0] || e.amount > amountRange[1]) return false;
       }
@@ -107,7 +102,7 @@ export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFi
       }
       return true;
     });
-  }, [expenses, selectedCategories, categoryMap, statusFilter, amountRange, dateRange, allowedStatuses]);
+  }, [expenses, selectedCategories, categoryMap, selectedStatuses, amountRange, dateRange, allowedStatuses]);
 
   const columns = useMemo<ColumnDef<ExpenseRow>[]>(
     () => [
@@ -236,19 +231,11 @@ export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFi
         />
 
         {/* Status */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {(allowedStatuses ? EXPENSE_STATUSES.filter((s) => allowedStatuses.includes(s)) : EXPENSE_STATUSES).map((s) => (
-              <SelectItem key={s} value={s}>
-                {s === "UnderReview" ? "Under Review" : s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <StatusFilter
+          selectedStatuses={selectedStatuses}
+          onSelectionChange={setSelectedStatuses}
+          allowedStatuses={allowedStatuses ? [...allowedStatuses] : undefined}
+        />
 
         {/* Amount range slider */}
         <AmountRangeSlider
@@ -276,15 +263,15 @@ export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFi
               Clear
             </Button>
           )}
-          {(selectedCategories.length > 0 || statusFilter !== "all" || amountRange !== null || !!dateRange) && (
+          {(selectedCategories.length > 0 || selectedStatuses.length > 0 || amountRange !== null || !!dateRange) && (
             <Button
               variant="ghost"
               size="sm"
               className="text-muted-foreground"
               onClick={() => {
                 setSelectedCategories([]);
-                setStatusFilter("all");
-                setInternalStatusFilter("all");
+                setSelectedStatuses([]);
+                setInternalSelectedStatuses([]);
                 setAmountRange(null);
                 setDateRange(undefined);
               }}

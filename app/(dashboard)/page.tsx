@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
@@ -9,17 +10,15 @@ export default function DashboardPage() {
   const user = useQuery(api.users.getCurrentUser);
   const router = useRouter();
 
-  if (user === undefined) return null;
-  if (user === null) {
-    router.replace("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (user === null) {
+      router.replace("/login");
+    } else if (user?.role === "manager") {
+      router.replace("/manager");
+    }
+  }, [user, router]);
 
-  // Redirect managers to their dashboard
-  if (user.role === "manager") {
-    router.replace("/manager");
-    return null;
-  }
+  if (user === undefined || user === null || user.role === "manager") return null;
 
   return <EmployeeDashboard />;
 }

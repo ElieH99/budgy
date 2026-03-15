@@ -10,11 +10,19 @@ import { EmployeeDashboard } from "@/components/expenses/EmployeeDashboard";
 
 export function ManagerDashboard() {
   const [activeTab, setActiveTab] = useState("pending");
-  const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
+  const [historySelectedStatuses, setHistorySelectedStatuses] = useState<string[]>([]);
 
   const handleStripStatusClick = (status: string, tab: "pending" | "history") => {
     setActiveTab(tab);
-    if (tab === "history") setHistoryStatusFilter(status);
+    if (tab === "history") {
+      if (status === "all") {
+        setHistorySelectedStatuses([]);
+      } else {
+        setHistorySelectedStatuses((prev) =>
+          prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+        );
+      }
+    }
   };
 
   return (
@@ -28,7 +36,7 @@ export function ManagerDashboard() {
         ) : (
           <ManagerSummaryStrip
             activeTab={activeTab}
-            activeHistoryStatus={historyStatusFilter}
+            activeHistoryStatuses={historySelectedStatuses}
             onStatusClick={handleStripStatusClick}
           />
         )}
@@ -46,8 +54,8 @@ export function ManagerDashboard() {
         </TabsContent>
         <TabsContent value="history" className="min-h-[420px]">
           <ReviewedHistory
-            statusFilter={historyStatusFilter}
-            onStatusFilterChange={setHistoryStatusFilter}
+            selectedStatuses={historySelectedStatuses}
+            onSelectedStatusesChange={setHistorySelectedStatuses}
           />
         </TabsContent>
         <TabsContent value="my-expenses" className="min-h-[420px]">

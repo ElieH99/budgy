@@ -25,14 +25,8 @@ import { type DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { History } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CategoryFilter } from "@/components/ui/category-filter";
+import { StatusFilter } from "@/components/ui/status-filter";
 
 interface HistoryRow {
   _id: Id<"expenses">;
@@ -49,16 +43,17 @@ interface HistoryRow {
 }
 
 interface ReviewedHistoryProps {
-  statusFilter?: string;
-  onStatusFilterChange?: (value: string) => void;
+  /** Controlled multi-select status filter. Empty array = no filter. */
+  selectedStatuses?: string[];
+  onSelectedStatusesChange?: (statuses: string[]) => void;
 }
 
-export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilterChange }: ReviewedHistoryProps = {}) {
+export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSelectedStatusesChange }: ReviewedHistoryProps = {}) {
   const categories = useQuery(api.categories.listCategories);
 
-  const [internalStatusFilter, setInternalStatusFilter] = useState<string>("all");
-  const statusFilter = statusFilterProp ?? internalStatusFilter;
-  const setStatusFilter = onStatusFilterChange ?? setInternalStatusFilter;
+  const [internalSelectedStatuses, setInternalSelectedStatuses] = useState<string[]>([]);
+  const selectedStatuses = selectedStatusesProp ?? internalSelectedStatuses;
+  const setSelectedStatuses = onSelectedStatusesChange ?? setInternalSelectedStatuses;
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [nameSearch, setNameSearch] = useState("");
   const [amountRange, setAmountRange] = useState<[number, number] | null>(null);
@@ -68,12 +63,7 @@ export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilter
   ]);
   const [reviewExpenseId, setReviewExpenseId] = useState<Id<"expenses"> | null>(null);
 
-  const reviewed = useQuery(
-    api.expenses.getReviewedHistory,
-    {
-      statusFilter: statusFilter === "all" ? undefined : statusFilter,
-    }
-  );
+  const reviewed = useQuery(api.expenses.getReviewedHistory, {});
 
   const hasLoadedOnce = useRef(false);
   if (reviewed !== undefined) {
@@ -99,7 +89,8 @@ export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilter
 
   const filteredData = useMemo(() => {
     if (!reviewed) return [];
-    return reviewed.filter((r: { submitterName: string; amount: number; categoryId?: string; approvedAt?: number; rejectedAt?: number; closedAt?: number; updatedAt: number }) => {
+    return reviewed.filter((r: { status: string; submitterName: string; amount: number; categoryId?: string; approvedAt?: number; rejectedAt?: number; closedAt?: number; updatedAt: number }) => {
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(r.status)) return false;
       if (nameSearch && !r.submitterName.toLowerCase().includes(nameSearch.toLowerCase())) return false;
       if (selectedCategories.length > 0) {
         const catName = r.categoryId ? categoryMap[r.categoryId] : undefined;
@@ -116,7 +107,7 @@ export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilter
       }
       return true;
     });
-  }, [reviewed, nameSearch, selectedCategories, categoryMap, amountRange, dateRange]);
+  }, [reviewed, selectedStatuses, nameSearch, selectedCategories, categoryMap, amountRange, dateRange]);
 
   const columns = useMemo<ColumnDef<HistoryRow>[]>(
     () => [
@@ -189,10 +180,9 @@ export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilter
     );
   }
 
-  const hasActiveServerFilters = statusFilter !== "all";
   const isRefetching = reviewed === undefined && hasLoadedOnce.current;
 
-  if (reviewed !== undefined && reviewed.length === 0 && !hasActiveServerFilters) {
+  if (reviewed !== undefined && reviewed.length === 0) {
     return (
       <div className="py-12 flex flex-col items-center text-center text-muted-foreground">
         <History className="w-8 h-8 mb-3 text-gray-300" />
@@ -204,11 +194,11 @@ export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilter
     );
   }
 
-  const hasActiveFilters = statusFilter !== "all" || selectedCategories.length > 0 || nameSearch !== "" || amountRange !== null || !!dateRange;
+  const hasActiveFilters = selectedStatuses.length > 0 || selectedCategories.length > 0 || nameSearch !== "" || amountRange !== null || !!dateRange;
 
   const resetAllFilters = () => {
-    setStatusFilter("all");
-    setInternalStatusFilter("all");
+    setSelectedStatuses([]);
+    setInternalSelectedStatuses([]);
     setSelectedCategories([]);
     setNameSearch("");
     setAmountRange(null);
@@ -228,17 +218,11 @@ export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilter
         />
 
         {/* Status */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="Approved">Approved</SelectItem>
-            <SelectItem value="Rejected">Rejected</SelectItem>
-            <SelectItem value="Closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
+        <StatusFilter
+          selectedStatuses={selectedStatuses}
+          onSelectionChange={setSelectedStatuses}
+          allowedStatuses={["Approved", "Rejected", "Closed"]}
+        />
 
         {/* Category */}
         <CategoryFilter

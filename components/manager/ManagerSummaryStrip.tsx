@@ -3,17 +3,20 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ManagerSummaryStripProps {
   activeTab?: string;
-  activeHistoryStatus?: string;
+  activeHistoryStatuses?: string[];
   onStatusClick?: (status: string, tab: "pending" | "history") => void;
 }
 
-export function ManagerSummaryStrip({ activeTab, activeHistoryStatus, onStatusClick }: ManagerSummaryStripProps = {}) {
+export function ManagerSummaryStrip({ activeTab, activeHistoryStatuses = [], onStatusClick }: ManagerSummaryStripProps = {}) {
   const stats = useQuery(api.expenses.getManagerStats);
+
+  const isLoading = stats === undefined;
 
   const pending = stats?.pending ?? 0;
   const approvedBudget = stats?.approvedBudgetThisMonth ?? 0;
@@ -38,12 +41,20 @@ export function ManagerSummaryStrip({ activeTab, activeHistoryStatus, onStatusCl
   const isClickable = !!onStatusClick;
 
   const isPendingActive = activeTab === "pending";
-  const isHistoryStatus = (status: string) => activeTab === "history" && activeHistoryStatus === status;
+  const isHistoryStatus = (status: string) => activeTab === "history" && activeHistoryStatuses.includes(status);
 
   return (
     <div className="rounded-xl border border-border bg-white px-5 py-3">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        {total === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <Skeleton className="h-5 w-22 rounded-full" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+        ) : total === 0 ? (
           <span className="text-sm text-muted-foreground">No expenses under management yet — they will appear here once employees start submitting.</span>
         ) : (
           <>
@@ -123,7 +134,7 @@ export function ManagerSummaryStrip({ activeTab, activeHistoryStatus, onStatusCl
         )}
 
         {/* Total — pushed to far right */}
-        {total > 0 && (
+        {!isLoading && total > 0 && (
           <div className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
             {total} total expense{total !== 1 ? "s" : ""}
           </div>
@@ -131,7 +142,11 @@ export function ManagerSummaryStrip({ activeTab, activeHistoryStatus, onStatusCl
       </div>
 
       {/* Segmented bar */}
-      {total > 0 && (
+      {isLoading ? (
+        <div className="mt-2.5">
+          <Skeleton className="h-1 w-full rounded-full" />
+        </div>
+      ) : total > 0 ? (
         <div className="mt-2.5 h-1 rounded-full overflow-hidden flex gap-0.5">
           {segments.map((seg, i) =>
             seg.count > 0 ? (
@@ -143,7 +158,7 @@ export function ManagerSummaryStrip({ activeTab, activeHistoryStatus, onStatusCl
             ) : null
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

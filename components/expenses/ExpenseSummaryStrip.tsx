@@ -3,18 +3,21 @@
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const ACTIONABLE = ["Draft", "Submitted", "UnderReview", "Rejected"];
 
 interface ExpenseSummaryStripProps {
-  activeStatus?: string;
+  selectedStatuses?: string[];
   onStatusClick?: (status: string) => void;
   onTabChange?: (tab: "active" | "resolved") => void;
 }
 
-export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }: ExpenseSummaryStripProps = {}) {
+export function ExpenseSummaryStrip({ selectedStatuses = [], onStatusClick, onTabChange }: ExpenseSummaryStripProps = {}) {
   const expenses = useQuery(api.expenses.getMyExpenses);
+
+  const isLoading = expenses === undefined;
 
   const submitted = expenses?.filter((e) => e.status === "Submitted").length ?? 0;
   const underReview = expenses?.filter((e) => e.status === "UnderReview").length ?? 0;
@@ -38,10 +41,10 @@ export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }
 
   const handleClick = (status: string) => {
     onTabChange?.(ACTIONABLE.includes(status) ? "active" : "resolved");
-    onStatusClick?.(activeStatus === status ? "all" : status);
+    onStatusClick?.(status);
   };
 
-  const isActive = (status: string) => activeStatus === status;
+  const isActive = (status: string) => selectedStatuses.includes(status);
   const isClickable = !!onStatusClick;
 
   type Pill = { status: string; count: number; label: string; classes: string; ring: string };
@@ -82,7 +85,14 @@ export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }
   return (
     <div className="rounded-xl border border-border bg-white px-5 py-3">
       <div className="flex items-center gap-2 flex-wrap">
-        {total === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <Skeleton className="h-5 w-18 rounded-full" />
+          </div>
+        ) : total === 0 ? (
           <span className="text-sm text-muted-foreground">No expenses yet — submit your first ticket to get started.</span>
         ) : (
           <>
@@ -108,7 +118,7 @@ export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }
         )}
 
         {/* Total — pushed to far right */}
-        {total > 0 && (
+        {!isLoading && total > 0 && (
           <div className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
             {total} total expense{total !== 1 ? "s" : ""}
           </div>
@@ -116,7 +126,11 @@ export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }
       </div>
 
       {/* Segmented bar */}
-      {total > 0 && (
+      {isLoading ? (
+        <div className="mt-2.5">
+          <Skeleton className="h-1 w-full rounded-full" />
+        </div>
+      ) : total > 0 ? (
         <div className="mt-2.5 h-1 rounded-full overflow-hidden flex gap-0.5">
           {segments.map((seg, i) =>
             seg.count > 0 ? (
@@ -128,7 +142,7 @@ export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }
             ) : null
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

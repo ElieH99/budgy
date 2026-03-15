@@ -9,6 +9,7 @@ import { ExpenseFormModal } from "./ExpenseFormModal";
 import { ExpenseDetailModal } from "./ExpenseDetailModal";
 import { ExpenseSummaryStrip } from "./ExpenseSummaryStrip";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Plus, ReceiptText, FilePlus, Send, CheckCircle } from "lucide-react";
 
@@ -21,7 +22,7 @@ export function EmployeeDashboard({ hideSummaryStrip = false }: { hideSummaryStr
   const [formOpen, setFormOpen] = useState(false);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [sortedQueue, setSortedQueue] = useState<Id<"expenses">[]>([]);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [viewTab, setViewTab] = useState<"active" | "resolved">("active");
 
   const hasExpenses = expenses && expenses.length > 0;
@@ -40,7 +41,17 @@ export function EmployeeDashboard({ hideSummaryStrip = false }: { hideSummaryStr
         </Button>
       </div>
 
-      {expenses !== undefined && !hasExpenses ? (
+      {expenses === undefined ? (
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="h-8 w-24 rounded-md" />
+          </div>
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
+          <Skeleton className="h-10 w-full rounded-md" />
+        </div>
+      ) : !hasExpenses ? (
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl pt-10 pb-8 px-8 flex flex-col items-center justify-center text-center max-w-2xl mx-auto w-full">
           <div className="rounded-full bg-indigo-50 flex items-center justify-center p-5 mb-5">
             <ReceiptText className="size-16 text-indigo-400" />
@@ -88,12 +99,25 @@ export function EmployeeDashboard({ hideSummaryStrip = false }: { hideSummaryStr
         <>
           {hasExpenses && !hideSummaryStrip && (
             <ExpenseSummaryStrip
-              activeStatus={statusFilter}
-              onStatusClick={setStatusFilter}
-              onTabChange={setViewTab}
+              selectedStatuses={selectedStatuses}
+              onStatusClick={(status) => {
+                setSelectedStatuses((prev) =>
+                  prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+                );
+              }}
+              onTabChange={(tab) => {
+                const allowed = tab === "active" ? ACTIVE_STATUSES : RESOLVED_STATUSES;
+                setViewTab(tab);
+                setSelectedStatuses((prev) => prev.filter((s) => allowed.includes(s)));
+              }}
             />
           )}
-          <Tabs value={viewTab} onValueChange={(v) => { setViewTab(v as "active" | "resolved"); setStatusFilter("all"); }}>
+          <Tabs value={viewTab} onValueChange={(v) => {
+            const tab = v as "active" | "resolved";
+            const allowed = tab === "active" ? ACTIVE_STATUSES : RESOLVED_STATUSES;
+            setViewTab(tab);
+            setSelectedStatuses((prev) => prev.filter((s) => allowed.includes(s)));
+          }}>
             <TabsList className="mb-2">
               <TabsTrigger value="active">Active</TabsTrigger>
               <TabsTrigger value="resolved">Resolved</TabsTrigger>
@@ -102,8 +126,8 @@ export function EmployeeDashboard({ hideSummaryStrip = false }: { hideSummaryStr
               <ExpenseTable
                 onRowClick={(_, idx) => setDetailIndex(idx)}
                 onQueueChange={setSortedQueue}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
+                selectedStatuses={selectedStatuses}
+                onSelectedStatusesChange={setSelectedStatuses}
                 allowedStatuses={ACTIVE_STATUSES}
               />
             </TabsContent>
@@ -111,8 +135,8 @@ export function EmployeeDashboard({ hideSummaryStrip = false }: { hideSummaryStr
               <ExpenseTable
                 onRowClick={(_, idx) => setDetailIndex(idx)}
                 onQueueChange={setSortedQueue}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
+                selectedStatuses={selectedStatuses}
+                onSelectedStatusesChange={setSelectedStatuses}
                 allowedStatuses={RESOLVED_STATUSES}
               />
             </TabsContent>

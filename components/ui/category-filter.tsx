@@ -25,8 +25,7 @@ export function CategoryFilter({
       ? selectedCategories.filter((c) => c !== name)
       : [...selectedCategories, name];
 
-    // If all categories are selected, reset to empty (no filter)
-    onSelectionChange(next.length === categories.length ? [] : next);
+    onSelectionChange(next);
   }
 
   const count = selectedCategories.length;
