@@ -1,4 +1,4 @@
-# Internal Expense Tracker
+# Budgy — Internal Expense Tracker
 
 An internal web application for employees to submit expense claims and managers to review, approve, reject, or close them. Supports the full expense lifecycle with version-snapshotted resubmissions and a permanent audit trail.
 
