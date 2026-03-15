@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function ManagerSummaryStrip() {
+interface ManagerSummaryStripProps {
+  activeTab?: string;
+  activeHistoryStatus?: string;
+  onStatusClick?: (status: string, tab: "pending" | "history") => void;
+}
+
+export function ManagerSummaryStrip({ activeTab, activeHistoryStatus, onStatusClick }: ManagerSummaryStripProps = {}) {
   const stats = useQuery(api.expenses.getManagerStats);
 
   const pending = stats?.pending ?? 0;
@@ -29,69 +35,104 @@ export function ManagerSummaryStrip() {
     { count: rest, color: "bg-gray-200" },
   ];
 
+  const isClickable = !!onStatusClick;
+
+  const isPendingActive = activeTab === "pending";
+  const isHistoryStatus = (status: string) => activeTab === "history" && activeHistoryStatus === status;
+
   return (
-    <div className="rounded-xl border border-border bg-white px-5 py-3 mb-6">
-      <div className="flex items-center gap-6">
-        {/* Badges: Submitted → Pending (Under Review) → Approved */}
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className={cn("bg-blue-100 text-blue-700 border-blue-200 font-medium")}
-          >
-            {submittedCount} Submitted
-          </Badge>
-          <Badge
-            variant="outline"
-            className={cn("bg-amber-100 text-amber-700 border-amber-200 font-semibold")}
-          >
-            {pending} Pending
-          </Badge>
-          <Badge
-            variant="outline"
-            className={cn("bg-green-100 text-green-700 border-green-200 font-medium")}
-          >
-            {approvedCount} Approved
-          </Badge>
-        </div>
+    <div className="rounded-xl border border-border bg-white px-5 py-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        {total === 0 ? (
+          <span className="text-sm text-muted-foreground">No expenses under management yet — they will appear here once employees start submitting.</span>
+        ) : (
+          <>
+            {/* Badges: Submitted → Pending (Under Review) → Approved → Rejected → Closed */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "bg-blue-100 text-blue-700 border-blue-200 font-medium",
+                  isClickable && "cursor-pointer hover:opacity-80 transition-opacity",
+                  isPendingActive && "ring-2 ring-offset-1 ring-blue-400"
+                )}
+                onClick={() => onStatusClick?.("all", "pending")}
+              >
+                {submittedCount} Submitted
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "bg-amber-100 text-amber-700 border-amber-200 font-semibold",
+                  isClickable && "cursor-pointer hover:opacity-80 transition-opacity",
+                  isPendingActive && "ring-2 ring-offset-1 ring-amber-400"
+                )}
+                onClick={() => onStatusClick?.("all", "pending")}
+              >
+                {pending} Pending
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "bg-green-100 text-green-700 border-green-200 font-medium",
+                  isClickable && "cursor-pointer hover:opacity-80 transition-opacity",
+                  isHistoryStatus("Approved") && "ring-2 ring-offset-1 ring-green-400"
+                )}
+                onClick={() => onStatusClick?.("Approved", "history")}
+              >
+                {approvedCount} Approved
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "bg-orange-100 text-orange-700 border-orange-200 font-medium",
+                  isClickable && "cursor-pointer hover:opacity-80 transition-opacity",
+                  isHistoryStatus("Rejected") && "ring-2 ring-offset-1 ring-orange-400"
+                )}
+                onClick={() => onStatusClick?.("Rejected", "history")}
+              >
+                {rejectedCount} Rejected
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "bg-red-100 text-red-800 border-red-200 font-medium",
+                  isClickable && "cursor-pointer hover:opacity-80 transition-opacity",
+                  isHistoryStatus("Closed") && "ring-2 ring-offset-1 ring-red-400"
+                )}
+                onClick={() => onStatusClick?.("Closed", "history")}
+              >
+                {closedCount} Closed
+              </Badge>
+            </div>
 
-        {/* Separator */}
-        <div className="h-4 w-px bg-border" />
+            {/* Separator */}
+            <div className="h-4 w-px bg-border" />
 
-        {/* Approved budget this month */}
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <DollarSign className="h-4 w-4 text-green-600 shrink-0" />
-          <span>
-            <span className="font-semibold text-green-700">
-              ${approvedBudget.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>{" "}
-            approved this month
-          </span>
-        </div>
-
-        {/* Separator */}
-        <div className="h-4 w-px bg-border" />
-
-        {/* Rejected + Closed — no separator between them */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>
-            <span className="font-medium text-orange-700">{rejectedCount}</span>{" "}
-            rejected
-          </span>
-          <span>
-            <span className="font-medium text-red-800">{closedCount}</span>{" "}
-            closed
-          </span>
-        </div>
+            {/* Approved budget this month */}
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <DollarSign className="h-4 w-4 text-green-600 shrink-0" />
+              <span>
+                <span className="font-semibold text-green-700">
+                  ${approvedBudget.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>{" "}
+                approved this month
+              </span>
+            </div>
+          </>
+        )}
 
         {/* Total — pushed to far right */}
-        <div className="ml-auto text-sm text-muted-foreground">
-          {total} total expense{total !== 1 ? "s" : ""}
-        </div>
+        {total > 0 && (
+          <div className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
+            {total} total expense{total !== 1 ? "s" : ""}
+          </div>
+        )}
       </div>
 
       {/* Segmented bar */}
       {total > 0 && (
-        <div className="mt-2.5 flex h-1 rounded-full overflow-hidden gap-0.5">
+        <div className="mt-2.5 h-1 rounded-full overflow-hidden flex gap-0.5">
           {segments.map((seg, i) =>
             seg.count > 0 ? (
               <div

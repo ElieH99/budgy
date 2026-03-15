@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
 import { type ExpenseStatus } from "@/lib/constants";
+import { formatAmount } from "@/lib/utils";
 import { format } from "date-fns";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/ui/toast";
@@ -33,18 +34,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 interface ExpenseDetailModalProps {
   open: boolean;
   onClose: () => void;
   expenseId: Id<"expenses"> | null;
+  queue?: Id<"expenses">[];
+  currentIndex?: number;
+  onNavigate?: (index: number) => void;
 }
 
 export function ExpenseDetailModal({
   open,
   onClose,
   expenseId,
+  queue,
+  currentIndex,
+  onNavigate,
 }: ExpenseDetailModalProps) {
 
   const detail = useQuery(
@@ -72,7 +80,10 @@ export function ExpenseDetailModal({
       await submitExpense({ expenseId });
       toast.success("Expense submitted for approval");
     } catch (err) {
-      toast.error("Error", { description: err instanceof Error ? err.message : "Failed to submit", duration: 5000 });
+      const raw = err instanceof Error ? err.message : "";
+      const match = raw.match(/ConvexError:\s*(.+?)(?:\s*Called by|$)/);
+      const description = match ? match[1].trim() : "Failed to submit expense";
+      toast.error("Submission failed", { description, duration: 5000 });
     }
   };
 
@@ -118,13 +129,51 @@ export function ExpenseDetailModal({
           ) : (
             <>
               <DialogHeader>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <DialogTitle className="text-xl">
-                    {displayVersion?.title ?? "Expense"}
-                  </DialogTitle>
-                  {status && <StatusBadge status={status} />}
-                  {expense && expense.currentVersion > 0 && (
-                    <VersionBadge versionNumber={expense.currentVersion} />
+                <div className="flex items-center justify-between gap-2 pr-8">
+                  <div className="flex items-center gap-3 flex-wrap min-w-0">
+                    <DialogTitle className="text-xl truncate">
+                      {displayVersion?.title ?? "Expense"}
+                    </DialogTitle>
+                    {status && <StatusBadge status={status} />}
+                    {expense && expense.currentVersion > 0 && (
+                      <VersionBadge versionNumber={expense.currentVersion} />
+                    )}
+                  </div>
+
+                  {queue && currentIndex !== undefined && onNavigate && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Previous expense"
+                            disabled={currentIndex === 0}
+                            onClick={() => onNavigate(currentIndex - 1)}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Previous expense</TooltipContent>
+                      </Tooltip>
+                      <span className="text-sm text-muted-foreground whitespace-nowrap">
+                        {currentIndex + 1} of {queue.length}
+                      </span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label="Next expense"
+                            disabled={currentIndex === queue.length - 1}
+                            onClick={() => onNavigate(currentIndex + 1)}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Next expense</TooltipContent>
+                      </Tooltip>
+                    </div>
                   )}
                 </div>
                 <DialogDescription>
@@ -142,7 +191,7 @@ export function ExpenseDetailModal({
                     <div>
                       <span className="text-xs text-muted-foreground uppercase tracking-wide">Amount</span>
                       <p className="text-sm font-medium mt-0.5">
-                        {displayVersion?.amount.toFixed(2)} {displayVersion?.currencyCode}
+                        {displayVersion != null ? formatAmount(displayVersion.amount) : ""} {displayVersion?.currencyCode}
                       </p>
                     </div>
                     <div>

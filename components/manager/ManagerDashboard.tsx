@@ -10,28 +10,47 @@ import { EmployeeDashboard } from "@/components/expenses/EmployeeDashboard";
 
 export function ManagerDashboard() {
   const [activeTab, setActiveTab] = useState("pending");
+  const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
+
+  const handleStripStatusClick = (status: string, tab: "pending" | "history") => {
+    setActiveTab(tab);
+    if (tab === "history") setHistoryStatusFilter(status);
+  };
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold text-gray-900">Manager Dashboard</h1>
 
       {/* Summary strip — swaps based on active tab, always in same position */}
-      {activeTab === "my-expenses" ? <ExpenseSummaryStrip /> : <ManagerSummaryStrip />}
+      <div className="min-h-[72px]">
+        {activeTab === "my-expenses" ? (
+          <ExpenseSummaryStrip />
+        ) : (
+          <ManagerSummaryStrip
+            activeTab={activeTab}
+            activeHistoryStatus={historyStatusFilter}
+            onStatusClick={handleStripStatusClick}
+          />
+        )}
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="pending">Pending Review</TabsTrigger>
           <TabsTrigger value="history">Reviewed History</TabsTrigger>
-          <TabsTrigger value="my-expenses">My Expenses</TabsTrigger>
+          <TabsTrigger value="my-expenses">My Submissions</TabsTrigger>
         </TabsList>
-        <TabsContent value="pending">
+        <TabsContent value="pending" className="min-h-[420px]">
           <PendingQueue />
         </TabsContent>
-        <TabsContent value="history">
-          <ReviewedHistory />
+        <TabsContent value="history" className="min-h-[420px]">
+          <ReviewedHistory
+            statusFilter={historyStatusFilter}
+            onStatusFilterChange={setHistoryStatusFilter}
+          />
         </TabsContent>
-        <TabsContent value="my-expenses">
+        <TabsContent value="my-expenses" className="min-h-[420px]">
           <EmployeeDashboard hideSummaryStrip />
         </TabsContent>
       </Tabs>

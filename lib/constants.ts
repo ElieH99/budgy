@@ -61,7 +61,6 @@ export const CURRENCIES = [
   { code: "GBP", label: "GBP — British Pound" },
   { code: "CAD", label: "CAD — Canadian Dollar" },
   { code: "AUD", label: "AUD — Australian Dollar" },
-  { code: "JPY", label: "JPY — Japanese Yen" },
   { code: "CHF", label: "CHF — Swiss Franc" },
   { code: "SEK", label: "SEK — Swedish Krona" },
   { code: "NOK", label: "NOK — Norwegian Krone" },
@@ -74,7 +73,7 @@ export const CURRENCIES = [
 ] as const;
 
 export const CURRENCY_CODES = [
-  "USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CHF", "SEK",
+  "USD", "EUR", "GBP", "CAD", "AUD", "CHF", "SEK",
   "NOK", "DKK", "SGD", "HKD", "NZD", "INR", "MXN",
 ] as const;
 

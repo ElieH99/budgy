@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Receipt } from "lucide-react";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
@@ -23,7 +22,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (user) {
       router.replace(user.role === "manager" ? "/manager" : "/");
@@ -34,7 +32,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       await signIn("password", { email, password, flow: "signIn" });
     } catch {
@@ -45,66 +42,95 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sign In</CardTitle>
-          <CardDescription>
-            Internal Expense Tracker
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {error}
+    <div className="flex min-h-screen items-center justify-center bg-slate-100">
+      <div className="mx-4 w-full max-w-[380px] sm:mx-auto">
+        <div className="overflow-hidden rounded-2xl border border-[#e5e2db] bg-white shadow-xl">
+          {/* Top accent strip */}
+          <div className="h-1 w-full bg-[#7C6BF0]" />
+
+          <div className="px-5 py-6 sm:px-7 sm:py-8">
+            {/* Logo mark */}
+            <div className="flex justify-center mb-4">
+              <div className="flex items-center gap-2">
+                <Receipt className="h-6 w-6 text-primary" />
+                <span className="text-sm font-medium text-foreground">Expense Tracker</span>
               </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
+
+            <div className="border-t border-border mb-5" />
+
+            {/* Heading */}
+            <div className="mb-5">
+              <h1 className="text-lg font-medium">Sign in</h1>
+              <p className="text-sm text-muted-foreground">Internal expense tracker</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs font-medium text-muted-foreground">
+                  Email
+                </Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
+                  className="focus:ring-2 focus:ring-[#7C6BF0]/20 focus:border-[#7C6BF0]"
                 />
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
               </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-primary underline hover:no-underline">
-                Register
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    className="focus:ring-2 focus:ring-[#7C6BF0]/20 focus:border-[#7C6BF0]"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full border-none bg-[#7C6BF0] text-white hover:bg-[#6a59d8]"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign in"}
+              </Button>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Don&apos;t have an account?{" "}
+                <Link href="/register" className="text-[#7C6BF0] hover:underline">
+                  Register
+                </Link>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -232,6 +232,9 @@ export const getReviewedHistory = query({
       expenses.push(...closed);
     }
 
+    // Exclude the manager's own expenses
+    expenses = expenses.filter((e) => e.submittedBy !== user._id);
+
     if (employeeFilter) {
       expenses = expenses.filter((e) => e.submittedBy === employeeFilter);
     }

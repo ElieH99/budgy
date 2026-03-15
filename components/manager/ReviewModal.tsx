@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
 import { type ExpenseStatus, REJECTION_REASONS, CLOSE_REASONS } from "@/lib/constants";
+import { formatAmount } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/toast";
 import { StatusBadge } from "@/components/expenses/StatusBadge";
@@ -83,6 +84,20 @@ export function ReviewModal({
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // After an action, advance to the next pending ticket or close the modal
+  const advanceOrClose = () => {
+    if (onNavigate && queue && currentIndex !== undefined) {
+      // The acted-on ticket will leave the queue, so the next ticket shifts to currentIndex
+      // (or we go to the last one if we were at the end)
+      const nextIndex = currentIndex < queue.length - 1 ? currentIndex : currentIndex - 1;
+      if (nextIndex >= 0) {
+        onNavigate(nextIndex);
+        return;
+      }
+    }
+    onClose();
+  };
+
   // Open for review when manager opens a Submitted expense
   useEffect(() => {
     if (
@@ -126,7 +141,7 @@ export function ReviewModal({
         approvalNote: approvalNote || undefined,
       });
       toast.success("Expense approved");
-      onClose();
+      advanceOrClose();
     } catch (err) {
       toast.error("Error", { description: err instanceof Error ? err.message : "Failed to approve", duration: 5000 });
     } finally {
@@ -144,7 +159,7 @@ export function ReviewModal({
         rejectionComment,
       });
       toast.success("Expense rejected");
-      onClose();
+      advanceOrClose();
     } catch (err) {
       toast.error("Error", { description: err instanceof Error ? err.message : "Failed to reject", duration: 5000 });
     } finally {
@@ -163,7 +178,7 @@ export function ReviewModal({
       });
       toast.success("Expense permanently closed");
       setCloseConfirmOpen(false);
-      onClose();
+      advanceOrClose();
     } catch (err) {
       toast.error("Error", { description: err instanceof Error ? err.message : "Failed to close", duration: 5000 });
     } finally {
@@ -264,7 +279,7 @@ export function ReviewModal({
                     <div>
                       <span className="text-xs text-muted-foreground uppercase tracking-wide">Amount</span>
                       <p className="text-sm font-medium mt-0.5">
-                        {latestVersion?.amount.toFixed(2)} {latestVersion?.currencyCode}
+                        {latestVersion != null ? formatAmount(latestVersion.amount) : ""} {latestVersion?.currencyCode}
                       </p>
                     </div>
                     <div>
@@ -517,9 +532,9 @@ export function ReviewModal({
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Close Expense Permanently</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are permanently closing this expense. {submitterFirstName} will not be able to edit or resubmit it. This cannot be undone.
+            <AlertDialogTitle>Close Expense Permanently!</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-700">
+              You are permanently closing this expense. {submitterFirstName} will not be able to edit or resubmit it. This cannot be undone!
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

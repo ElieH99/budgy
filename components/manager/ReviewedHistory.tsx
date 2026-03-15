@@ -14,6 +14,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
 import { type ExpenseStatus } from "@/lib/constants";
+import { formatAmount } from "@/lib/utils";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/expenses/StatusBadge";
 import { ReviewModal } from "./ReviewModal";
@@ -47,10 +48,17 @@ interface HistoryRow {
   closedAt?: number;
 }
 
-export function ReviewedHistory() {
+interface ReviewedHistoryProps {
+  statusFilter?: string;
+  onStatusFilterChange?: (value: string) => void;
+}
+
+export function ReviewedHistory({ statusFilter: statusFilterProp, onStatusFilterChange }: ReviewedHistoryProps = {}) {
   const categories = useQuery(api.categories.listCategories);
 
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState<string>("all");
+  const statusFilter = statusFilterProp ?? internalStatusFilter;
+  const setStatusFilter = onStatusFilterChange ?? setInternalStatusFilter;
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [nameSearch, setNameSearch] = useState("");
   const [amountRange, setAmountRange] = useState<[number, number] | null>(null);
@@ -133,7 +141,7 @@ export function ReviewedHistory() {
         accessorKey: "amount",
         header: "Amount",
         cell: ({ row }) =>
-          `${row.original.amount.toFixed(2)} ${row.original.currencyCode}`,
+          `${formatAmount(row.original.amount)} ${row.original.currencyCode}`,
       },
       {
         accessorKey: "status",
@@ -196,16 +204,27 @@ export function ReviewedHistory() {
     );
   }
 
+  const hasActiveFilters = statusFilter !== "all" || selectedCategories.length > 0 || nameSearch !== "" || amountRange !== null || !!dateRange;
+
+  const resetAllFilters = () => {
+    setStatusFilter("all");
+    setInternalStatusFilter("all");
+    setSelectedCategories([]);
+    setNameSearch("");
+    setAmountRange(null);
+    setDateRange(undefined);
+  };
+
   return (
     <>
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mt-4 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mt-4 mb-2">
         {/* Name search */}
         <Input
           placeholder="Search by employee name..."
           value={nameSearch}
           onChange={(e) => setNameSearch(e.target.value)}
-          className="w-56"
+          className="w-56 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
 
         {/* Status */}
@@ -255,35 +274,30 @@ export function ReviewedHistory() {
             </Button>
           )}
         </div>
-
-        {/* Reset all */}
-        {(statusFilter !== "all" || selectedCategories.length > 0 || nameSearch !== "" || amountRange !== null || !!dateRange) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
-            onClick={() => {
-              setStatusFilter("all");
-              setSelectedCategories([]);
-              setNameSearch("");
-              setAmountRange(null);
-              setDateRange(undefined);
-            }}
-          >
-            Reset filters
-          </Button>
-        )}
       </div>
 
-      <div className={`rounded-md border bg-white overflow-x-auto transition-opacity ${isRefetching ? "opacity-50" : ""}`}>
+      {/* Reset all — always reserves space to prevent layout jump */}
+      <div className="h-7">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          style={{ visibility: hasActiveFilters ? "visible" : "hidden" }}
+          onClick={resetAllFilters}
+        >
+          Reset filters
+        </Button>
+      </div>
+
+      <div className={`rounded-md border border-gray-200 bg-white overflow-x-auto transition-opacity ${isRefetching ? "opacity-50" : ""}`}>
         <table className="w-full" aria-label="Reviewed expenses history">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b bg-muted/50">
+              <tr key={headerGroup.id} className="border-b border-gray-200 bg-gray-50">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer select-none"
+                    className="px-4 py-3 text-left text-sm font-medium text-gray-600 cursor-pointer select-none"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-1">
@@ -307,7 +321,7 @@ export function ReviewedHistory() {
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
+                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => setReviewExpenseId(row.original._id)}
                 >
                   {row.getVisibleCells().map((cell) => (

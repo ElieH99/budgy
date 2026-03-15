@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,6 +13,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
 import { type ExpenseStatus, EXPENSE_STATUSES } from "@/lib/constants";
+import { formatAmount } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { StatusBadge } from "./StatusBadge";
 import { AmountRangeSlider } from "@/components/ui/amount-range-slider";
@@ -46,10 +47,14 @@ interface ExpenseRow {
 }
 
 interface ExpenseTableProps {
-  onRowClick: (expenseId: Id<"expenses">) => void;
+  onRowClick: (expenseId: Id<"expenses">, index: number) => void;
+  onQueueChange?: (queue: Id<"expenses">[]) => void;
+  statusFilter?: string;
+  onStatusFilterChange?: (value: string) => void;
+  allowedStatuses?: string[];
 }
 
-export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
+export function ExpenseTable({ onRowClick, onQueueChange, statusFilter: statusFilterProp, onStatusFilterChange, allowedStatuses }: ExpenseTableProps) {
   const expenses = useQuery(api.expenses.getMyExpenses);
   const categories = useQuery(api.categories.listCategories);
   const [sorting, setSorting] = useState<SortingState>([
@@ -57,7 +62,9 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
   ]);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [internalStatusFilter, setInternalStatusFilter] = useState("all");
+  const statusFilter = statusFilterProp ?? internalStatusFilter;
+  const setStatusFilter = onStatusFilterChange ?? setInternalStatusFilter;
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const amountBounds = useMemo(() => {
@@ -87,6 +94,7 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
         const catName = e.categoryId ? categoryMap[e.categoryId] : undefined;
         if (!catName || !selectedCategories.includes(catName)) return false;
       }
+      if (allowedStatuses && !allowedStatuses.includes(e.status)) return false;
       if (statusFilter !== "all" && e.status !== statusFilter) return false;
       if (amountRange) {
         if (e.amount < amountRange[0] || e.amount > amountRange[1]) return false;
@@ -99,7 +107,7 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
       }
       return true;
     });
-  }, [expenses, selectedCategories, categoryMap, statusFilter, amountRange, dateRange]);
+  }, [expenses, selectedCategories, categoryMap, statusFilter, amountRange, dateRange, allowedStatuses]);
 
   const columns = useMemo<ColumnDef<ExpenseRow>[]>(
     () => [
@@ -150,11 +158,14 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
       },
       {
         accessorKey: "amount",
-        header: "Amount",
-        cell: ({ row }) =>
-          row.original.amount
-            ? `${row.original.amount.toFixed(2)} ${row.original.currencyCode}`
-            : "—",
+        header: () => <div className="text-right">Amount</div>,
+        cell: ({ row }) => (
+          <div className="text-right tabular-nums">
+            {row.original.amount
+              ? `${formatAmount(row.original.amount)} ${row.original.currencyCode}`
+              : "—"}
+          </div>
+        ),
       },
       {
         accessorKey: "status",
@@ -192,6 +203,11 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // Keep parent in sync with the current sorted+filtered order
+  useEffect(() => {
+    onQueueChange?.(table.getRowModel().rows.map((r) => r.original._id));
+  }, [filteredData, sorting, onQueueChange]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (expenses === undefined) {
     return (
       <div className="space-y-3" role="status" aria-label="Loading expenses">
@@ -226,7 +242,7 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            {EXPENSE_STATUSES.map((s) => (
+            {(allowedStatuses ? EXPENSE_STATUSES.filter((s) => allowedStatuses.includes(s)) : EXPENSE_STATUSES).map((s) => (
               <SelectItem key={s} value={s}>
                 {s === "UnderReview" ? "Under Review" : s}
               </SelectItem>
@@ -243,7 +259,7 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
           onReset={() => setAmountRange(null)}
         />
 
-        {/* Date range */}
+        {/* Date range + Reset all */}
         <div className="flex items-center gap-2">
           <DateRangePicker
             value={dateRange}
@@ -260,35 +276,34 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
               Clear
             </Button>
           )}
+          {(selectedCategories.length > 0 || statusFilter !== "all" || amountRange !== null || !!dateRange) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => {
+                setSelectedCategories([]);
+                setStatusFilter("all");
+                setInternalStatusFilter("all");
+                setAmountRange(null);
+                setDateRange(undefined);
+              }}
+            >
+              Reset filters
+            </Button>
+          )}
         </div>
-
-        {/* Reset all */}
-        {(selectedCategories.length > 0 || statusFilter !== "all" || amountRange !== null || !!dateRange) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
-            onClick={() => {
-              setSelectedCategories([]);
-              setStatusFilter("all");
-              setAmountRange(null);
-              setDateRange(undefined);
-            }}
-          >
-            Reset filters
-          </Button>
-        )}
       </div>
 
-      <div className="rounded-md border bg-white overflow-x-auto">
+      <div className="rounded-xl border border-gray-200 shadow-sm bg-white overflow-x-auto">
         <table className="w-full" aria-label="My expenses">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b bg-muted/50">
+              <tr key={headerGroup.id} className="border-b-2 border-gray-200 bg-slate-100">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer select-none"
+                    className="px-6 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer select-none"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-1">
@@ -309,14 +324,14 @@ export function ExpenseTable({ onRowClick }: ExpenseTableProps) {
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, idx) => (
                 <tr
                   key={row.id}
-                  className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
-                  onClick={() => onRowClick(row.original._id)}
+                  className="border-b border-gray-200 odd:bg-white even:bg-slate-100/50 hover:bg-indigo-50/40 cursor-pointer transition-colors"
+                  onClick={() => onRowClick(row.original._id, idx)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
+                    <td key={cell.id} className="px-6 py-3 text-sm">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

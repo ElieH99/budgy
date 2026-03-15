@@ -5,7 +5,15 @@ import { api } from "@/convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-export function ExpenseSummaryStrip() {
+const ACTIONABLE = ["Draft", "Submitted", "UnderReview", "Rejected"];
+
+interface ExpenseSummaryStripProps {
+  activeStatus?: string;
+  onStatusClick?: (status: string) => void;
+  onTabChange?: (tab: "active" | "resolved") => void;
+}
+
+export function ExpenseSummaryStrip({ activeStatus, onStatusClick, onTabChange }: ExpenseSummaryStripProps = {}) {
   const expenses = useQuery(api.expenses.getMyExpenses);
 
   const submitted = expenses?.filter((e) => e.status === "Submitted").length ?? 0;
@@ -28,71 +36,88 @@ export function ExpenseSummaryStrip() {
     { count: withdrawn, color: "bg-slate-300" },
   ];
 
+  const handleClick = (status: string) => {
+    onTabChange?.(ACTIONABLE.includes(status) ? "active" : "resolved");
+    onStatusClick?.(activeStatus === status ? "all" : status);
+  };
+
+  const isActive = (status: string) => activeStatus === status;
+  const isClickable = !!onStatusClick;
+
+  type Pill = { status: string; count: number; label: string; classes: string; ring: string };
+
+  const actionable: Pill[] = [
+    { status: "Draft",       count: drafts,      label: "Drafts",       classes: "bg-gray-100 text-gray-700 border-gray-200",      ring: "ring-gray-400"   },
+    { status: "Submitted",   count: submitted,   label: "Submitted",    classes: "bg-blue-100 text-blue-700 border-blue-200",      ring: "ring-blue-400"   },
+    { status: "UnderReview", count: underReview, label: "Under Review", classes: "bg-amber-100 text-amber-700 border-amber-200",   ring: "ring-amber-400"  },
+    { status: "Rejected",    count: rejected,    label: "Rejected",     classes: "bg-orange-100 text-orange-700 border-orange-200", ring: "ring-orange-400" },
+  ];
+
+  const terminal: Pill[] = [
+    { status: "Approved",  count: approved,  label: "Approved",  classes: "bg-green-100 text-green-700 border-green-200", ring: "ring-green-400" },
+    { status: "Closed",    count: closed,    label: "Closed",    classes: "bg-red-100 text-red-800 border-red-200",       ring: "ring-red-400"   },
+    { status: "Withdrawn", count: withdrawn, label: "Withdrawn", classes: "bg-slate-100 text-slate-600 border-slate-200", ring: "ring-slate-400" },
+  ];
+
+  const renderPill = ({ status, count, label, classes, ring }: Pill) =>
+    count === 0 ? null : (
+      <Badge
+        key={status}
+        variant="outline"
+        className={cn(
+          "text-xs px-2 py-0.5 font-medium",
+          classes,
+          isClickable && "cursor-pointer hover:opacity-80 transition-opacity",
+          isActive(status) && `ring-2 ring-offset-1 ${ring}`
+        )}
+        onClick={() => handleClick(status)}
+      >
+        {count} {label}
+      </Badge>
+    );
+
+  const hasActionable = actionable.some((p) => p.count > 0);
+  const hasTerminal = terminal.some((p) => p.count > 0);
+
   return (
-    <div className="rounded-xl border border-border bg-white px-5 py-3 mb-6">
-      <div className="flex items-center gap-6">
-        {/* Actionable statuses — badges */}
-        <div className="flex items-center gap-2">
-          <Badge
-            variant="outline"
-            className={cn(
-              "bg-gray-100 text-gray-700 border-gray-200 font-medium"
+    <div className="rounded-xl border border-border bg-white px-5 py-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        {total === 0 ? (
+          <span className="text-sm text-muted-foreground">No expenses yet — submit your first ticket to get started.</span>
+        ) : (
+          <>
+            {/* Actionable statuses */}
+            {hasActionable && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {actionable.map(renderPill)}
+              </div>
             )}
-          >
-            {drafts} Drafts
-          </Badge>
-          <Badge
-            variant="outline"
-            className={cn(
-              "bg-blue-100 text-blue-700 border-blue-200 font-medium"
-            )}
-          >
-            {submitted} Submitted
-          </Badge>
-          <Badge
-            variant="outline"
-            className={cn(
-              "bg-amber-100 text-amber-700 border-amber-200 font-medium"
-            )}
-          >
-            {underReview} Under Review
-          </Badge>
-        </div>
 
-        {/* Separator */}
-        <div className="h-4 w-px bg-border" />
+            {/* Divider — only shown when both groups have visible pills */}
+            {hasActionable && hasTerminal && (
+              <div className="h-4 w-px bg-border mx-1 shrink-0" />
+            )}
 
-        {/* Terminal statuses — muted text */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>
-            <span className="font-medium text-green-700">{approved}</span>{" "}
-            Approved
-          </span>
-          <span>
-            <span className="font-medium text-orange-700">{rejected}</span>{" "}
-            Rejected
-          </span>
-          <span>
-            <span className="font-medium text-red-800">{closed}</span>{" "}
-            Closed
-          </span>
-          {withdrawn > 0 && (
-            <span>
-              <span className="font-medium text-slate-600">{withdrawn}</span>{" "}
-              Withdrawn
-            </span>
-          )}
-        </div>
+            {/* Terminal statuses */}
+            {hasTerminal && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {terminal.map(renderPill)}
+              </div>
+            )}
+          </>
+        )}
 
         {/* Total — pushed to far right */}
-        <div className="ml-auto text-sm text-muted-foreground">
-          {total} total expense{total !== 1 ? "s" : ""}
-        </div>
+        {total > 0 && (
+          <div className="ml-auto text-sm text-muted-foreground whitespace-nowrap">
+            {total} total expense{total !== 1 ? "s" : ""}
+          </div>
+        )}
       </div>
 
       {/* Segmented bar */}
       {total > 0 && (
-        <div className="mt-2.5 flex h-1 rounded-full overflow-hidden gap-0.5">
+        <div className="mt-2.5 h-1 rounded-full overflow-hidden flex gap-0.5">
           {segments.map((seg, i) =>
             seg.count > 0 ? (
               <div

@@ -16,6 +16,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
 import { type ExpenseStatus } from "@/lib/constants";
+import { formatAmount } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { StatusBadge } from "@/components/expenses/StatusBadge";
 import { ReviewModal } from "./ReviewModal";
@@ -128,7 +129,7 @@ export function PendingQueue() {
                   <span>{row.original.categoryId ? categoryMap[row.original.categoryId] ?? "—" : "—"}</span>
                   <span>·</span>
                   <span className="font-medium text-gray-700">
-                    {row.original.amount.toFixed(2)} {row.original.currencyCode}
+                    {formatAmount(row.original.amount)} {row.original.currencyCode}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -151,7 +152,7 @@ export function PendingQueue() {
         accessorKey: "amount",
         header: "Amount",
         cell: ({ row }) =>
-          `${row.original.amount.toFixed(2)} ${row.original.currencyCode}`,
+          `${formatAmount(row.original.amount)} ${row.original.currencyCode}`,
       },
       {
         accessorKey: "submittedAt",
@@ -231,16 +232,25 @@ export function PendingQueue() {
 
   const sortedRows = table.getRowModel().rows;
 
+  const hasActiveFilters = amountRange !== null || !!dateRange || selectedCategories.length > 0 || nameSearch !== "";
+
+  const resetAllFilters = () => {
+    setAmountRange(null);
+    setDateRange(undefined);
+    setSelectedCategories([]);
+    setNameSearch("");
+  };
+
   return (
     <>
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mt-4 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mt-4 mb-2">
         {/* Name search */}
         <Input
           placeholder="Search by employee name..."
           value={nameSearch}
           onChange={(e) => setNameSearch(e.target.value)}
-          className="w-56"
+          className="w-56 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
 
         {/* Category */}
@@ -277,34 +287,30 @@ export function PendingQueue() {
             </Button>
           )}
         </div>
-
-        {/* Reset all */}
-        {(amountRange !== null || !!dateRange || selectedCategories.length > 0 || nameSearch !== "") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
-            onClick={() => {
-              setAmountRange(null);
-              setDateRange(undefined);
-              setSelectedCategories([]);
-              setNameSearch("");
-            }}
-          >
-            Reset filters
-          </Button>
-        )}
       </div>
 
-      <div className="rounded-md border bg-white mt-0 overflow-x-auto">
+      {/* Reset all — always reserves space to prevent layout jump */}
+      <div className="h-7">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          style={{ visibility: hasActiveFilters ? "visible" : "hidden" }}
+          onClick={resetAllFilters}
+        >
+          Reset filters
+        </Button>
+      </div>
+
+      <div className="rounded-md border border-gray-200 bg-white mt-0 overflow-x-auto">
         <table className="w-full" aria-label="Pending expenses for review">
           <thead>
             {table.getHeaderGroups().map((headerGroup: HeaderGroup<PendingRow>) => (
-              <tr key={headerGroup.id} className="border-b bg-muted/50">
+              <tr key={headerGroup.id} className="border-b border-gray-200 bg-gray-50">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer select-none"
+                    className="px-4 py-3 text-left text-sm font-medium text-gray-600 cursor-pointer select-none"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-1">
@@ -328,8 +334,8 @@ export function PendingQueue() {
               sortedRows.map((row: Row<PendingRow>, idx: number) => (
                 <tr
                   key={row.id}
-                  className={`border-b hover:bg-muted/30 cursor-pointer transition-colors ${
-                    row.original.status === "UnderReview" ? "bg-amber-50/50" : ""
+                  className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                    row.original.status === "UnderReview" ? "bg-amber-50" : ""
                   }`}
                   onClick={() => setReviewIndex(idx)}
                 >

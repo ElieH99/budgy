@@ -9,6 +9,7 @@ import { api } from "@/convex/_generated/api";
 import { type Id } from "@/convex/_generated/dataModel";
 import { expenseFormSchema, type ExpenseFormValues } from "@/lib/validators";
 import { CURRENCIES, ACCEPTED_RECEIPT_TYPES, MAX_RECEIPT_SIZE_BYTES } from "@/lib/constants";
+import { formatAmount } from "@/lib/utils";
 import { toast } from "@/components/ui/toast";
 import { RejectionBanner } from "./RejectionBanner";
 import {
@@ -31,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Upload, X, Loader2, Info } from "lucide-react";
+import { Upload, X, Loader2, Info, CheckCircle2, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 type Mode = "create" | "edit" | "resubmit";
@@ -75,6 +76,9 @@ export function ExpenseFormModal({
   );
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [amountDisplay, setAmountDisplay] = useState<string>(
+    defaultValues?.amount != null ? formatAmount(defaultValues.amount as number) : ""
+  );
 
   const {
     register,
@@ -100,6 +104,10 @@ export function ExpenseFormModal({
 
   const receiptStorageId = watch("receiptStorageId");
 
+  // In edit/resubmit mode the expense already has a receipt — block saving if it's been removed
+  const hadExistingReceipt = mode !== "create" && !!defaultValues?.receiptStorageId;
+  const receiptRemoved = hadExistingReceipt && !receiptStorageId;
+
   useEffect(() => {
     if (open && defaultValues) {
       reset({
@@ -114,6 +122,7 @@ export function ExpenseFormModal({
         ...defaultValues,
       });
       setReceiptPreview(defaultValues.receiptStorageId ? "existing" : null);
+      setAmountDisplay(defaultValues.amount != null ? formatAmount(defaultValues.amount as number) : "");
     } else if (open && !defaultValues) {
       reset({
         title: "",
@@ -126,6 +135,7 @@ export function ExpenseFormModal({
         receiptStorageId: "",
       });
       setReceiptPreview(null);
+      setAmountDisplay("");
     } else if (!open) {
       reset({
         title: "",
@@ -138,6 +148,7 @@ export function ExpenseFormModal({
         receiptStorageId: "",
       });
       setReceiptPreview(null);
+      setAmountDisplay("");
     }
   }, [open, defaultValues, reset]);
 
@@ -173,6 +184,10 @@ export function ExpenseFormModal({
   };
 
   const handleSaveDraft = async (data: ExpenseFormValues) => {
+    if (receiptRemoved) {
+      toast.error("Receipt required", { description: "Please upload a receipt before saving", duration: 5000 });
+      return;
+    }
     setSaving(true);
     try {
       if (mode === "create") {
@@ -370,12 +385,32 @@ export function ExpenseFormModal({
               <Label htmlFor="amount">Amount *</Label>
               <Input
                 id="amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                {...register("amount", { valueAsNumber: true })}
+                type="text"
+                inputMode="decimal"
                 placeholder="0.00"
                 aria-describedby={errors.amount ? "amount-error" : undefined}
+                value={amountDisplay}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/,/g, "").replace(/-/g, "");
+                  setAmountDisplay(e.target.value.replace(/-/g, ""));
+                  const n = parseFloat(raw);
+                  setValue("amount", isNaN(n) ? (undefined as unknown as number) : n, { shouldValidate: true, shouldDirty: true });
+                }}
+                onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
+                onFocus={(e) => {
+                  const raw = e.target.value.replace(/,/g, "");
+                  setAmountDisplay(raw === "0" ? "" : raw);
+                }}
+                onBlur={(e) => {
+                  const raw = e.target.value.replace(/,/g, "");
+                  const n = parseFloat(raw);
+                  if (!isNaN(n)) {
+                    setAmountDisplay(formatAmount(n));
+                    setValue("amount", n, { shouldValidate: true, shouldDirty: true });
+                  } else {
+                    setAmountDisplay("");
+                  }
+                }}
               />
               {errors.amount && <p id="amount-error" className="text-sm text-red-600">{errors.amount.message}</p>}
             </div>
@@ -410,47 +445,55 @@ export function ExpenseFormModal({
                   <span className="text-sm text-muted-foreground">Uploading...</span>
                 </div>
               ) : receiptStorageId || receiptPreview ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-start gap-4">
+                  {/* Preview */}
+                  <div className="relative flex-shrink-0">
                     {receiptPreview && receiptPreview !== "existing" ? (
-                      <label className="cursor-pointer" title="Click to replace receipt">
-                        <img src={receiptPreview} alt="Receipt preview" className="h-16 w-16 object-cover rounded hover:opacity-80 transition-opacity" />
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                        />
-                      </label>
+                      <img src={receiptPreview} alt="Receipt preview" className="h-24 w-24 object-cover rounded-md border border-gray-200 shadow-sm" />
                     ) : existingReceiptUrl ? (
-                      <label className="cursor-pointer" title="Click to replace receipt">
-                        <img src={existingReceiptUrl} alt="Receipt preview" className="h-16 w-16 object-cover rounded hover:opacity-80 transition-opacity" />
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                        />
-                      </label>
+                      <img src={existingReceiptUrl} alt="Receipt preview" className="h-24 w-24 object-cover rounded-md border border-gray-200 shadow-sm" />
                     ) : (
-                      <div className="h-16 w-16 rounded bg-muted flex items-center justify-center">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <div className="h-24 w-24 rounded-md bg-muted flex items-center justify-center border border-gray-200">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                       </div>
                     )}
-                    <span className="text-sm text-green-600">Receipt uploaded</span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Remove receipt"
-                    onClick={() => {
-                      setValue("receiptStorageId", "", { shouldDirty: true });
-                      setReceiptPreview(null);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+
+                  {/* Info + actions */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <span className="text-sm font-medium text-green-700">Receipt attached</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">Click &ldquo;Replace&rdquo; to swap the file.</p>
+                    <div className="flex items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 h-7 px-2.5 text-xs cursor-pointer rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors font-medium">
+                        <RefreshCw className="h-3 w-3" />
+                        Replace
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onClick={(e) => { (e.target as HTMLInputElement).value = ""; }}
+                          onChange={handleFileUpload}
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 gap-1.5"
+                        aria-label="Remove receipt"
+                        onClick={() => {
+                          setValue("receiptStorageId", "", { shouldDirty: true });
+                          setReceiptPreview(null);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <label className="flex flex-col items-center gap-2 cursor-pointer py-4">
@@ -466,6 +509,9 @@ export function ExpenseFormModal({
                 </label>
               )}
             </div>
+            {receiptRemoved && (
+              <p className="text-sm text-red-600">A receipt is required. Please upload a new receipt.</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -482,7 +528,7 @@ export function ExpenseFormModal({
           <Button
             variant="secondary"
             onClick={handleSubmit(handleSaveDraft)}
-            disabled={saving || submitting || uploading}
+            disabled={saving || submitting || uploading || receiptRemoved}
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {saving ? "Saving..." : "Save as Draft"}
@@ -490,7 +536,7 @@ export function ExpenseFormModal({
           <Button
             className="bg-indigo-600 hover:bg-indigo-700"
             onClick={handleSubmit(handleSubmitForApproval)}
-            disabled={saving || submitting || uploading}
+            disabled={saving || submitting || uploading || receiptRemoved}
           >
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {submitting ? "Submitting..." : "Submit for Approval"}

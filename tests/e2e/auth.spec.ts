@@ -10,7 +10,7 @@ test.describe("Authentication", () => {
 
       // Should be on the employee dashboard (root /)
       await expect(page).toHaveURL(/\/$/);
-      await expect(page.locator("text=My Expenses")).toBeVisible();
+      await expect(page.locator("text=My Submissions")).toBeVisible();
     });
 
     test("manager can log in with valid credentials → redirected to manager dashboard", async ({

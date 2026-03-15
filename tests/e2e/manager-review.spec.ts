@@ -181,8 +181,8 @@ test.describe("Manager — Review", () => {
 
     // The submitted expense should NOT appear in the pending queue
     // (pending queue is the default tab for managers)
-    // The expense should be under "My Expenses" tab
-    await page.click('button[role="tab"]:has-text("My Expenses")');
+    // The expense should be under "My Submissions" tab
+    await page.click('button[role="tab"]:has-text("My Submissions")');
     await expect(page.locator(`text=${title}`)).toBeVisible({ timeout: 10000 });
 
     // Switch back to pending queue

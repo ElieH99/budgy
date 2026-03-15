@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { formatAmount } from "@/lib/utils";
 
 interface VersionEntry {
   _id: string;
@@ -119,7 +120,7 @@ export function VersionHistoryPanel({ versions, currentStatus, history = [] }: V
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <div>
                       <span className="text-muted-foreground">Amount:</span>{" "}
-                      {version.amount.toFixed(2)} {version.currencyCode}
+                      {formatAmount(version.amount)} {version.currencyCode}
                     </div>
                     <div>
                       <span className="text-muted-foreground">Category:</span>{" "}
