@@ -128,6 +128,32 @@ The seed script is idempotent — safe to run multiple times.
 - **Frontend-only changes:** Push to your main branch — Vercel redeploys automatically.
 - **Schema changes:** Always deploy Convex first, then Vercel, to avoid function/schema mismatches.
 
+## Testing
+
+```bash
+# Unit and integration tests (Vitest)
+npm run test
+
+# End-to-end tests (Playwright) — requires the app to be running
+npx playwright test
+
+# View the Playwright HTML report
+npx playwright show-report
+```
+
+E2E tests expect the app to be running at `http://localhost:3000` with the seed accounts in place. Run `npx convex dev` and `npm run dev` before running Playwright.
+
+## Documentation
+
+| Doc | Audience |
+|---|---|
+| [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Employees & managers — workflows, status meanings, FAQ |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Engineers — system design, auth flow, data model, state machine |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | Engineers — all Convex mutations and queries |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contributors — conventions, patterns, PR checklist |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Ops / DevOps — common setup and deployment failures |
+| [CLAUDE.md](CLAUDE.md) | Agents / architects — full requirements and business rules |
+
 ## Project Structure
 
 ```
