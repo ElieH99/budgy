@@ -24,7 +24,7 @@ For security, you will be signed out automatically after 15 minutes of inactivit
 
 ### Submitting an expense
 
-1. From your dashboard, click **New Expense**.
+1. From your dashboard, click **New Ticket**.
 2. Fill in all required fields:
    - **Title** — a short description of the expense (e.g. "Client lunch — March 2026")
    - **Description** — a fuller explanation
@@ -34,8 +34,8 @@ For security, you will be signed out automatically after 15 minutes of inactivit
    - **Date** — the date the expense was incurred
    - **Receipt** — upload a JPEG, PNG, or WEBP image (max 5 MB). Required before you can submit.
    - **Notes** — optional additional context
-3. Click **Save Draft** at any time to save your progress.
-4. Click **Submit** when you are ready to send the expense to a manager.
+3. Click **Save as Draft** at any time to save your progress.
+4. Click **Submit for Approval** when you are ready to send the expense to a manager.
 
 > A receipt is required. The form will not allow you to submit without one.
 
@@ -61,7 +61,7 @@ When a manager rejects an expense, you will see the rejection reason and a comme
 1. Open the rejected expense.
 2. Click **Edit & Resubmit** — this returns the expense to **Draft** status with your previous data pre-populated.
 3. Make the required corrections (update the receipt, amount, or other fields as needed).
-4. Click **Submit** to send the revised expense back for review.
+4. Click **Submit for Approval** to send the revised expense back for review.
 
 A new version snapshot is created on every resubmission. The manager can see all previous versions.
 
@@ -119,8 +119,8 @@ In the review modal:
    - Employee no longer with company
    - Other
 2. Write a close comment (minimum 10 characters).
-3. A confirmation dialog will appear naming the employee and stating the action cannot be undone. Type the comment to unlock the confirm button.
-4. Click **Confirm Close**.
+3. Once the comment is at least 10 characters, the **Close Permanently** button becomes active. Click it to open a confirmation dialog naming the employee and stating the action cannot be undone.
+4. Click **Close permanently** to confirm.
 
 The expense moves to **Closed** (terminal — no further changes possible).
 
@@ -175,4 +175,4 @@ No. Managers can submit expenses but cannot approve, reject, or close their own 
 USD, EUR, GBP, CAD, AUD, CHF, SEK, NOK, DKK, SGD, HKD, NZD, INR, MXN.
 
 **Is there a draft auto-save?**
-Yes — your form progress is saved as a draft each time you update a field. You can safely close the browser and return to continue later.
+No — drafts are saved manually. Click **Save as Draft** in the form to preserve your progress. If you close the browser without saving, unsaved changes will be lost. You can reopen your saved draft at any time from your dashboard.
