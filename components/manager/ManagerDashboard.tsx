@@ -17,11 +17,23 @@ export function ManagerDashboard() {
     if (tab === "history") {
       if (status === "all") {
         setHistorySelectedStatuses([]);
+      } else if (activeTab !== "history") {
+        // Coming from another tab — set as sole filter, don't toggle
+        setHistorySelectedStatuses([status]);
       } else {
+        // Already on history tab — toggle
         setHistorySelectedStatuses((prev) =>
           prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
         );
       }
+    }
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Clear history filter when manually switching away from history
+    if (tab !== "history") {
+      setHistorySelectedStatuses([]);
     }
   };
 
@@ -43,7 +55,7 @@ export function ManagerDashboard() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="pending">Pending Review</TabsTrigger>
           <TabsTrigger value="history">Reviewed History</TabsTrigger>

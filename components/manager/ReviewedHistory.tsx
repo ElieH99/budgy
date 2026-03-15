@@ -138,7 +138,9 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
         accessorKey: "status",
         header: "Decision",
         cell: ({ row }) => (
-          <StatusBadge status={row.original.status as ExpenseStatus} />
+          <div className="whitespace-nowrap">
+            <StatusBadge status={row.original.status as ExpenseStatus} />
+          </div>
         ),
       },
       {
@@ -309,7 +311,7 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
                   onClick={() => setReviewExpenseId(row.original._id)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
+                    <td key={cell.id} className="px-4 py-3 text-sm align-middle">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

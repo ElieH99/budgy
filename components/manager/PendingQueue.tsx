@@ -164,7 +164,9 @@ export function PendingQueue() {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
-          <StatusBadge status={row.original.status as ExpenseStatus} />
+          <div className="whitespace-nowrap">
+            <StatusBadge status={row.original.status as ExpenseStatus} />
+          </div>
         ),
       },
       {
@@ -340,7 +342,7 @@ export function PendingQueue() {
                   onClick={() => setReviewIndex(idx)}
                 >
                   {row.getVisibleCells().map((cell: Cell<PendingRow, unknown>) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
+                    <td key={cell.id} className="px-4 py-3 text-sm align-middle">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

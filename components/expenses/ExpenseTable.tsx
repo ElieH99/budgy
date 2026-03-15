@@ -166,7 +166,9 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
-          <StatusBadge status={row.original.status as ExpenseStatus} />
+          <div className="whitespace-nowrap">
+            <StatusBadge status={row.original.status as ExpenseStatus} />
+          </div>
         ),
       },
       {
@@ -318,7 +320,7 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
                   onClick={() => onRowClick(row.original._id, idx)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-6 py-3 text-sm">
+                    <td key={cell.id} className="px-6 py-3 text-sm align-middle">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

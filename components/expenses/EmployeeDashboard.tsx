@@ -35,10 +35,18 @@ export function EmployeeDashboard({ hideSummaryStrip = false }: { hideSummaryStr
         {!hideSummaryStrip && (
           <h1 className="text-xl font-semibold text-gray-900">My Submissions</h1>
         )}
-        <Button onClick={() => setFormOpen(true)} className={hideSummaryStrip ? "ml-auto" : ""}>
-          <Plus className="h-4 w-4 mr-1" />
-          New Ticket
-        </Button>
+        {!hideSummaryStrip && (hasExpenses || expenses === undefined) && (
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            New Ticket
+          </Button>
+        )}
+        {hideSummaryStrip && hasExpenses && (
+          <Button onClick={() => setFormOpen(true)} className="ml-auto">
+            <Plus className="h-4 w-4 mr-1" />
+            New Ticket
+          </Button>
+        )}
       </div>
 
       {expenses === undefined ? (
