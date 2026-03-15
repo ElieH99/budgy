@@ -76,8 +76,9 @@ export function ExpenseFormModal({
   );
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // defaultValues.amount is in cents from DB; display in dollars
   const [amountDisplay, setAmountDisplay] = useState<string>(
-    defaultValues?.amount != null ? formatAmount(defaultValues.amount as number) : ""
+    defaultValues?.amount != null ? formatAmount((defaultValues.amount as number) / 100) : ""
   );
 
   const {
@@ -92,13 +93,14 @@ export function ExpenseFormModal({
     defaultValues: {
       title: "",
       description: "",
-      amount: undefined as unknown as number,
       currencyCode: "USD",
       categoryId: "",
       expenseDate: Date.now(),
       notes: "",
       receiptStorageId: "",
       ...defaultValues,
+      // DB stores cents; form works in dollars
+      amount: defaultValues?.amount != null ? (defaultValues.amount as number) / 100 : undefined as unknown as number,
     },
   });
 
@@ -113,16 +115,17 @@ export function ExpenseFormModal({
       reset({
         title: "",
         description: "",
-        amount: undefined as unknown as number,
         currencyCode: "USD",
         categoryId: "",
         expenseDate: Date.now(),
         notes: "",
         receiptStorageId: "",
         ...defaultValues,
+        // DB stores cents; form works in dollars
+        amount: defaultValues.amount != null ? (defaultValues.amount as number) / 100 : undefined as unknown as number,
       });
       setReceiptPreview(defaultValues.receiptStorageId ? "existing" : null);
-      setAmountDisplay(defaultValues.amount != null ? formatAmount(defaultValues.amount as number) : "");
+      setAmountDisplay(defaultValues.amount != null ? formatAmount((defaultValues.amount as number) / 100) : "");
     } else if (open && !defaultValues) {
       reset({
         title: "",
@@ -194,7 +197,7 @@ export function ExpenseFormModal({
         await createDraft({
           title: data.title,
           description: data.description,
-          amount: data.amount,
+          amount: Math.round(data.amount * 100),
           currencyCode: data.currencyCode,
           categoryId: data.categoryId as Id<"categories">,
           expenseDate: data.expenseDate,
@@ -207,7 +210,7 @@ export function ExpenseFormModal({
           expenseId,
           title: data.title,
           description: data.description,
-          amount: data.amount,
+          amount: Math.round(data.amount * 100),
           currencyCode: data.currencyCode,
           categoryId: data.categoryId as Id<"categories">,
           expenseDate: data.expenseDate,
@@ -241,7 +244,7 @@ export function ExpenseFormModal({
         const newId = await createDraft({
           title: data.title,
           description: data.description,
-          amount: data.amount,
+          amount: Math.round(data.amount * 100),
           currencyCode: data.currencyCode,
           categoryId: data.categoryId as Id<"categories">,
           expenseDate: data.expenseDate,
@@ -255,7 +258,7 @@ export function ExpenseFormModal({
           expenseId,
           title: data.title,
           description: data.description,
-          amount: data.amount,
+          amount: Math.round(data.amount * 100),
           currencyCode: data.currencyCode,
           categoryId: data.categoryId as Id<"categories">,
           expenseDate: data.expenseDate,
@@ -328,14 +331,14 @@ export function ExpenseFormModal({
         <form className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
-            <Input id="title" {...register("title")} placeholder="Expense title" aria-describedby={errors.title ? "title-error" : undefined} />
-            {errors.title && <p id="title-error" className="text-sm text-red-600">{errors.title.message}</p>}
+            <Input id="title" {...register("title")} placeholder="Expense title" aria-required="true" aria-describedby={errors.title ? "title-error" : undefined} />
+            {errors.title && <p id="title-error" role="alert" className="text-sm text-red-600">{errors.title.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description *</Label>
-            <Textarea id="description" {...register("description")} placeholder="Describe the expense" aria-describedby={errors.description ? "description-error" : undefined} />
-            {errors.description && <p id="description-error" className="text-sm text-red-600">{errors.description.message}</p>}
+            <Textarea id="description" {...register("description")} placeholder="Describe the expense" aria-required="true" aria-describedby={errors.description ? "description-error" : undefined} />
+            {errors.description && <p id="description-error" role="alert" className="text-sm text-red-600">{errors.description.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -345,7 +348,7 @@ export function ExpenseFormModal({
                 value={watch("categoryId")}
                 onValueChange={(val) => setValue("categoryId", val, { shouldDirty: true, shouldValidate: true })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="category" aria-required="true" aria-describedby={errors.categoryId ? "category-error" : undefined}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -356,7 +359,7 @@ export function ExpenseFormModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.categoryId && <p id="category-error" className="text-sm text-red-600">{errors.categoryId.message}</p>}
+              {errors.categoryId && <p id="category-error" role="alert" className="text-sm text-red-600">{errors.categoryId.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -365,7 +368,7 @@ export function ExpenseFormModal({
                 value={watch("currencyCode")}
                 onValueChange={(val) => setValue("currencyCode", val as ExpenseFormValues["currencyCode"], { shouldDirty: true, shouldValidate: true })}
               >
-                <SelectTrigger>
+                <SelectTrigger id="currency" aria-required="true" aria-describedby={errors.currencyCode ? "currency-error" : undefined}>
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
@@ -376,7 +379,7 @@ export function ExpenseFormModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.currencyCode && <p className="text-sm text-red-600">{errors.currencyCode.message}</p>}
+              {errors.currencyCode && <p id="currency-error" role="alert" className="text-sm text-red-600">{errors.currencyCode.message}</p>}
             </div>
           </div>
 
@@ -388,6 +391,7 @@ export function ExpenseFormModal({
                 type="text"
                 inputMode="decimal"
                 placeholder="0.00"
+                aria-required="true"
                 aria-describedby={errors.amount ? "amount-error" : undefined}
                 value={amountDisplay}
                 onChange={(e) => {
@@ -412,7 +416,7 @@ export function ExpenseFormModal({
                   }
                 }}
               />
-              {errors.amount && <p id="amount-error" className="text-sm text-red-600">{errors.amount.message}</p>}
+              {errors.amount && <p id="amount-error" role="alert" className="text-sm text-red-600">{errors.amount.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -423,25 +427,27 @@ export function ExpenseFormModal({
                 onChange={(date) => setValue("expenseDate", date ? date.getTime() : Date.now(), { shouldDirty: true, shouldValidate: true })}
                 placeholder="Select expense date"
                 disableFuture
+                aria-required="true"
+                aria-describedby={errors.expenseDate ? "expenseDate-error" : undefined}
               />
-              {errors.expenseDate && <p className="text-sm text-red-600">{errors.expenseDate.message}</p>}
+              {errors.expenseDate && <p id="expenseDate-error" role="alert" className="text-sm text-red-600">{errors.expenseDate.message}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">
-              <Label>Receipt *</Label>
+              <Label htmlFor="receipt-upload">Receipt *</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" aria-describedby="receipt-tooltip" aria-label="Receipt info" />
                 </TooltipTrigger>
-                <TooltipContent>OCR feature coming soon</TooltipContent>
+                <TooltipContent id="receipt-tooltip">OCR feature coming soon</TooltipContent>
               </Tooltip>
             </div>
             <div className="border-2 border-dashed rounded-md p-4">
               {uploading ? (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                <div className="flex items-center justify-center gap-2 py-4" role="status" aria-label="Uploading receipt">
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                   <span className="text-sm text-muted-foreground">Uploading...</span>
                 </div>
               ) : receiptStorageId || receiptPreview ? (
@@ -449,12 +455,12 @@ export function ExpenseFormModal({
                   {/* Preview */}
                   <div className="relative flex-shrink-0">
                     {receiptPreview && receiptPreview !== "existing" ? (
-                      <img src={receiptPreview} alt="Receipt preview" className="h-24 w-24 object-cover rounded-md border border-gray-200 shadow-sm" />
+                      <img src={receiptPreview} alt="Uploaded receipt preview" className="h-24 w-24 object-cover rounded-md border border-gray-200 shadow-sm" />
                     ) : existingReceiptUrl ? (
-                      <img src={existingReceiptUrl} alt="Receipt preview" className="h-24 w-24 object-cover rounded-md border border-gray-200 shadow-sm" />
+                      <img src={existingReceiptUrl} alt="Existing receipt preview" className="h-24 w-24 object-cover rounded-md border border-gray-200 shadow-sm" />
                     ) : (
-                      <div className="h-24 w-24 rounded-md bg-muted flex items-center justify-center border border-gray-200">
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      <div className="h-24 w-24 rounded-md bg-muted flex items-center justify-center border border-gray-200" role="status" aria-label="Loading receipt preview">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
                       </div>
                     )}
                   </div>
@@ -462,18 +468,20 @@ export function ExpenseFormModal({
                   {/* Info + actions */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium text-green-700">Receipt attached</span>
                     </div>
                     <p className="text-xs text-muted-foreground mb-3">Click &ldquo;Replace&rdquo; to swap the file.</p>
                     <div className="flex items-center gap-2">
-                      <label className="inline-flex items-center gap-1.5 h-7 px-2.5 text-xs cursor-pointer rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors font-medium">
-                        <RefreshCw className="h-3 w-3" />
+                      <label htmlFor="receipt-replace" className="inline-flex items-center gap-1.5 h-7 px-2.5 text-xs cursor-pointer rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors font-medium">
+                        <RefreshCw className="h-3 w-3" aria-hidden="true" />
                         Replace
                         <input
+                          id="receipt-replace"
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
                           className="hidden"
+                          aria-label="Replace receipt file"
                           onClick={(e) => { (e.target as HTMLInputElement).value = ""; }}
                           onChange={handleFileUpload}
                         />
@@ -489,35 +497,38 @@ export function ExpenseFormModal({
                           setReceiptPreview(null);
                         }}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3 w-3" aria-hidden="true" />
                         Remove
                       </Button>
                     </div>
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center gap-2 cursor-pointer py-4">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
+                <label htmlFor="receipt-upload" className="flex flex-col items-center gap-2 cursor-pointer py-4">
+                  <Upload className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
                   <span className="text-sm text-muted-foreground">Click to upload receipt</span>
                   <span className="text-xs text-muted-foreground">JPEG, PNG, WEBP (max 5MB)</span>
                   <input
+                    id="receipt-upload"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
+                    aria-label="Upload receipt (JPEG, PNG or WEBP, max 5MB)"
+                    aria-required="true"
                     onChange={handleFileUpload}
                   />
                 </label>
               )}
             </div>
             {receiptRemoved && (
-              <p className="text-sm text-red-600">A receipt is required. Please upload a new receipt.</p>
+              <p role="alert" className="text-sm text-red-600">A receipt is required. Please upload a new receipt.</p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea id="notes" {...register("notes")} placeholder="Additional notes" />
-            {errors.notes && <p className="text-sm text-red-600">{errors.notes.message}</p>}
+            {errors.notes && <p role="alert" className="text-sm text-red-600">{errors.notes.message}</p>}
           </div>
         </form>
 
@@ -530,7 +541,7 @@ export function ExpenseFormModal({
             onClick={handleSubmit(handleSaveDraft)}
             disabled={saving || submitting || uploading || receiptRemoved}
           >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             {saving ? "Saving..." : "Save as Draft"}
           </Button>
           <Button
@@ -538,7 +549,7 @@ export function ExpenseFormModal({
             onClick={handleSubmit(handleSubmitForApproval)}
             disabled={saving || submitting || uploading || receiptRemoved}
           >
-            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             {submitting ? "Submitting..." : "Submit for Approval"}
           </Button>
         </DialogFooter>

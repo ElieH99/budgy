@@ -96,12 +96,14 @@ export function VersionHistoryPanel({ versions, currentStatus, history = [] }: V
                 type="button"
                 className="flex items-center justify-between w-full px-4 py-3 text-left hover:bg-muted/50"
                 onClick={() => toggle(version.versionNumber)}
+                aria-expanded={isExpanded}
+                aria-controls={`version-panel-${version.versionNumber}`}
               >
                 <div className="flex items-center gap-2">
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                   )}
                   <span className="text-sm font-medium">
                     v{version.versionNumber}
@@ -116,11 +118,11 @@ export function VersionHistoryPanel({ versions, currentStatus, history = [] }: V
               </button>
 
               {isExpanded && (
-                <div className="px-4 pb-4 pt-0 border-t space-y-2 text-sm">
+                <div id={`version-panel-${version.versionNumber}`} className="px-4 pb-4 pt-0 border-t space-y-2 text-sm">
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <div>
                       <span className="text-muted-foreground">Amount:</span>{" "}
-                      {formatAmount(version.amount)} {version.currencyCode}
+                      {formatAmount(version.amount / 100)} {version.currencyCode}
                     </div>
                     <div>
                       <span className="text-muted-foreground">Category:</span>{" "}

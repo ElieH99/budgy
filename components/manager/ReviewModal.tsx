@@ -197,8 +197,8 @@ export function ReviewModal({
             <>
               <DialogTitle className="sr-only">Loading expense</DialogTitle>
               <DialogDescription className="sr-only">Loading expense details</DialogDescription>
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-12" role="status" aria-label="Loading expense details">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
               </div>
             </>
           ) : (
@@ -254,6 +254,9 @@ export function ReviewModal({
                 </div>
                 <DialogDescription>
                   Submitted by {expense?.submittedByName?.firstName} {expense?.submittedByName?.lastName}
+                  {status === "Approved" && expense?.approvedByName && (
+                    <> · Approved by {expense.approvedByName.firstName} {expense.approvedByName.lastName}</>
+                  )}
                 </DialogDescription>
               </DialogHeader>
 
@@ -279,7 +282,7 @@ export function ReviewModal({
                     <div>
                       <span className="text-xs text-muted-foreground uppercase tracking-wide">Amount</span>
                       <p className="text-sm font-medium mt-0.5">
-                        {latestVersion != null ? formatAmount(latestVersion.amount) : ""} {latestVersion?.currencyCode}
+                        {latestVersion != null ? formatAmount(latestVersion.amount / 100) : ""} {latestVersion?.currencyCode}
                       </p>
                     </div>
                     <div>
@@ -346,7 +349,7 @@ export function ReviewModal({
                           <p className="text-sm font-medium text-gray-900">
                             {expense?.submittedByName?.firstName} {expense?.submittedByName?.lastName}
                           </p>
-                          <p className="text-xs text-muted-foreground">Employee</p>
+                          <p className="text-xs text-muted-foreground capitalize">{expense?.submittedByName?.role ?? "Employee"}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -380,13 +383,14 @@ export function ReviewModal({
                         onClick={activeAction === "approve" ? handleApprove : () => setActiveAction("approve")}
                         disabled={actionLoading}
                       >
-                        {actionLoading && activeAction === "approve" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {actionLoading && activeAction === "approve" && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                         {actionLoading && activeAction === "approve" ? "Approving..." : "Approve"}
                       </Button>
                       {activeAction === "approve" && (
                         <div className="space-y-2">
-                          <Label className="text-sm">Add a note for the employee (optional)</Label>
+                          <Label htmlFor="approval-note" className="text-sm">Add a note for the employee (optional)</Label>
                           <Textarea
+                            id="approval-note"
                             value={approvalNote}
                             onChange={(e) => setApprovalNote(e.target.value)}
                             placeholder="Optional approval note..."
@@ -396,7 +400,7 @@ export function ReviewModal({
                             onClick={handleApprove}
                             disabled={actionLoading}
                           >
-                            {actionLoading && activeAction === "approve" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {actionLoading && activeAction === "approve" && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                             {actionLoading && activeAction === "approve" ? "Approving..." : "Confirm Approval"}
                           </Button>
                         </div>
@@ -414,9 +418,9 @@ export function ReviewModal({
                       </Button>
                       {activeAction === "reject" && (
                         <div className="space-y-2">
-                          <Label className="text-sm">Rejection Reason *</Label>
+                          <Label htmlFor="rejection-reason" className="text-sm">Rejection Reason *</Label>
                           <Select value={rejectionReason} onValueChange={setRejectionReason}>
-                            <SelectTrigger>
+                            <SelectTrigger id="rejection-reason" aria-required="true" aria-describedby={rejectionReason === "" ? "rejection-reason-hint" : undefined}>
                               <SelectValue placeholder="Select reason" />
                             </SelectTrigger>
                             <SelectContent>
@@ -427,22 +431,26 @@ export function ReviewModal({
                               ))}
                             </SelectContent>
                           </Select>
-                          <Label className="text-sm">Rejection Comment * (min 10 chars)</Label>
+                          <Label htmlFor="rejection-comment" className="text-sm">Rejection Comment * (min 10 chars)</Label>
                           <Textarea
+                            id="rejection-comment"
                             value={rejectionComment}
                             onChange={(e) => setRejectionComment(e.target.value)}
                             placeholder="Explain what needs to be corrected..."
                             minLength={10}
+                            aria-required="true"
+                            aria-invalid={rejectionComment.length > 0 && rejectionComment.length < 10}
+                            aria-describedby={rejectionComment.length > 0 && rejectionComment.length < 10 ? "rejection-comment-error" : undefined}
                           />
                           {rejectionComment.length > 0 && rejectionComment.length < 10 && (
-                            <p className="text-xs text-red-600">Comment must be at least 10 characters</p>
+                            <p id="rejection-comment-error" role="alert" className="text-xs text-red-600">Comment must be at least 10 characters</p>
                           )}
                           <Button
                             className="bg-orange-500 hover:bg-orange-600 text-white"
                             onClick={handleReject}
                             disabled={!canReject || actionLoading}
                           >
-                            {actionLoading && activeAction === "reject" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {actionLoading && activeAction === "reject" && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                             {actionLoading && activeAction === "reject" ? "Rejecting..." : "Confirm Rejection"}
                           </Button>
                         </div>
@@ -461,9 +469,9 @@ export function ReviewModal({
                       </Button>
                       {activeAction === "close" && (
                         <div className="space-y-2">
-                          <Label className="text-sm">Close Reason *</Label>
+                          <Label htmlFor="close-reason" className="text-sm">Close Reason *</Label>
                           <Select value={closeReason} onValueChange={setCloseReason}>
-                            <SelectTrigger>
+                            <SelectTrigger id="close-reason" aria-required="true">
                               <SelectValue placeholder="Select reason" />
                             </SelectTrigger>
                             <SelectContent>
@@ -474,15 +482,19 @@ export function ReviewModal({
                               ))}
                             </SelectContent>
                           </Select>
-                          <Label className="text-sm">Close Comment * (min 10 chars)</Label>
+                          <Label htmlFor="close-comment" className="text-sm">Close Comment * (min 10 chars)</Label>
                           <Textarea
+                            id="close-comment"
                             value={closeComment}
                             onChange={(e) => setCloseComment(e.target.value)}
                             placeholder="Explain why this expense is being permanently closed..."
                             minLength={10}
+                            aria-required="true"
+                            aria-invalid={closeComment.length > 0 && closeComment.length < 10}
+                            aria-describedby={closeComment.length > 0 && closeComment.length < 10 ? "close-comment-error" : undefined}
                           />
                           {closeComment.length > 0 && closeComment.length < 10 && (
-                            <p className="text-xs text-red-600">Comment must be at least 10 characters</p>
+                            <p id="close-comment-error" role="alert" className="text-xs text-red-600">Comment must be at least 10 characters</p>
                           )}
                           <Button
                             variant="destructive"
@@ -490,7 +502,7 @@ export function ReviewModal({
                             onClick={() => setCloseConfirmOpen(true)}
                             disabled={!canClose || actionLoading}
                           >
-                            {actionLoading && activeAction === "close" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {actionLoading && activeAction === "close" && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                             Close Permanently
                           </Button>
                         </div>
@@ -503,19 +515,19 @@ export function ReviewModal({
                 {!isActionable && expense && (
                   <div className="space-y-4">
                     {status === "Approved" && expense.approvalNote && (
-                      <div className="rounded-md bg-green-50 border border-green-200 p-3 text-sm">
+                      <div role="status" className="rounded-md bg-green-50 border border-green-200 p-3 text-sm">
                         <p className="font-medium text-green-800">Approval Note</p>
                         <p className="text-green-700 mt-1">{expense.approvalNote}</p>
                       </div>
                     )}
                     {status === "Closed" && expense.closeComment && (
-                      <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm">
+                      <div role="status" className="rounded-md bg-red-50 border border-red-200 p-3 text-sm">
                         <p className="font-medium text-red-800">Closed: {expense.closeReason}</p>
                         <p className="text-red-700 mt-1">{expense.closeComment}</p>
                       </div>
                     )}
                     {status === "Rejected" && expense.rejectionComment && (
-                      <div className="rounded-md bg-orange-50 border border-orange-200 p-3 text-sm">
+                      <div role="status" className="rounded-md bg-orange-50 border border-orange-200 p-3 text-sm">
                         <p className="font-medium text-orange-800">Rejected: {expense.rejectionReason}</p>
                         <p className="text-orange-700 mt-1">{expense.rejectionComment}</p>
                       </div>
@@ -544,7 +556,7 @@ export function ReviewModal({
               disabled={!closeComment || actionLoading}
               className="bg-red-700 hover:bg-red-800 text-white"
             >
-              {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {actionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
               {actionLoading ? "Closing..." : "Close permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -569,12 +581,12 @@ function ReceiptPreview({
   return (
     <div className="text-sm">
       <span className="text-xs text-muted-foreground uppercase tracking-wide">Receipt</span>
-      <div className="mt-1 h-48 w-full rounded border bg-muted flex items-center justify-center overflow-hidden">
+      <div className="mt-1 h-48 w-full rounded border bg-muted flex items-center justify-center overflow-hidden" aria-busy={!url}>
         {!url ? (
-          <Skeleton className="h-full w-full" />
+          <Skeleton className="h-full w-full" aria-label="Loading receipt" />
         ) : (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="h-full w-full flex items-center justify-center">
-            <img src={url} alt="Receipt" className="max-h-full max-w-full object-contain cursor-pointer hover:opacity-80" />
+          <a href={url} target="_blank" rel="noopener noreferrer" aria-label="View receipt (opens in new tab)" className="h-full w-full flex items-center justify-center">
+            <img src={url} alt="Expense receipt document" className="max-h-full max-w-full object-contain cursor-pointer hover:opacity-80" />
           </a>
         )}
       </div>

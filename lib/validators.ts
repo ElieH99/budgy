@@ -20,7 +20,8 @@ export const expenseFormSchema = z.object({
   amount: z
     .number({ error: "Amount is required" })
     .positive("Amount must be greater than zero")
-    .finite("Amount must be a finite number"),
+    .finite("Amount must be a finite number")
+    .multipleOf(0.01, "Amount cannot have more than 2 decimal places"),
   currencyCode: z.enum(CURRENCY_CODES, {
     error: "Currency is required",
   }),

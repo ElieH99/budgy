@@ -64,7 +64,8 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
 
   const amountBounds = useMemo(() => {
     if (!expenses || expenses.length === 0) return { min: 0, max: 5000 };
-    const amounts = expenses.map((e) => e.amount ?? 0);
+    // amounts are stored in cents; compute slider bounds in dollars
+    const amounts = expenses.map((e) => (e.amount ?? 0) / 100);
     return { min: 0, max: Math.ceil(Math.max(...amounts) / 100) * 100 || 5000 };
   }, [expenses]);
 
@@ -92,7 +93,8 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
       if (allowedStatuses && !allowedStatuses.includes(e.status)) return false;
       if (selectedStatuses.length > 0 && !selectedStatuses.includes(e.status)) return false;
       if (amountRange) {
-        if (e.amount < amountRange[0] || e.amount > amountRange[1]) return false;
+        const amountDollars = (e.amount ?? 0) / 100;
+        if (amountDollars < amountRange[0] || amountDollars > amountRange[1]) return false;
       }
       if (dateRange?.from) {
         const date = e.expenseDate ?? e.updatedAt;
@@ -132,7 +134,7 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
                   <span>{row.original.categoryId ? categoryMap[row.original.categoryId] ?? "—" : "—"}</span>
                   <span>·</span>
                   <span className="font-medium text-gray-700">
-                    {row.original.amount?.toFixed(2)} {row.original.currencyCode}
+                    {row.original.amount != null ? formatAmount(row.original.amount / 100) : ""} {row.original.currencyCode}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -157,7 +159,7 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
         cell: ({ row }) => (
           <div className="text-right tabular-nums">
             {row.original.amount
-              ? `${formatAmount(row.original.amount)} ${row.original.currencyCode}`
+              ? `${formatAmount(row.original.amount / 100)} ${row.original.currencyCode}`
               : "—"}
           </div>
         ),
@@ -292,13 +294,17 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
+                    scope="col"
                     className="px-6 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer select-none"
                     onClick={header.column.getToggleSortingHandler()}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); header.column.getToggleSortingHandler()?.(e); } }}
+                    tabIndex={header.column.getCanSort() ? 0 : undefined}
+                    aria-sort={header.column.getIsSorted() === "asc" ? "ascending" : header.column.getIsSorted() === "desc" ? "descending" : header.column.getCanSort() ? "none" : undefined}
                   >
                     <div className="flex items-center gap-1">
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() === "asc" ? " ↑" : ""}
-                      {header.column.getIsSorted() === "desc" ? " ↓" : ""}
+                      {header.column.getIsSorted() === "asc" && <span aria-hidden="true"> ↑</span>}
+                      {header.column.getIsSorted() === "desc" && <span aria-hidden="true"> ↓</span>}
                     </div>
                   </th>
                 ))}
@@ -318,6 +324,10 @@ export function ExpenseTable({ onRowClick, onQueueChange, selectedStatuses: sele
                   key={row.id}
                   className="border-b border-gray-200 odd:bg-white even:bg-slate-100/50 hover:bg-indigo-50/40 cursor-pointer transition-colors"
                   onClick={() => onRowClick(row.original._id, idx)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onRowClick(row.original._id, idx); }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View expense: ${row.original.title || "Untitled"}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-6 py-3 text-sm align-middle">

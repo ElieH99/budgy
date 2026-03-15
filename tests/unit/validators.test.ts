@@ -4,6 +4,8 @@ import {
   rejectExpenseSchema,
   closeExpenseSchema,
   approveExpenseSchema,
+  withdrawExpenseSchema,
+  submitExpenseSchema,
 } from "@/lib/validators";
 
 // ── Helper: valid expense form data ────────────────────────────────────────
@@ -177,6 +179,51 @@ describe("closeExpenseSchema", () => {
       ...validClose,
       closeComment: "",
     });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ── submitExpenseSchema ────────────────────────────────────────────────────
+
+describe("submitExpenseSchema", () => {
+  it("accepts valid data with receiptStorageId", () => {
+    const result = submitExpenseSchema.safeParse({
+      ...validExpenseForm,
+      receiptStorageId: "valid-storage-id",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects when receiptStorageId is missing", () => {
+    const { receiptStorageId, ...rest } = validExpenseForm;
+    const result = submitExpenseSchema.safeParse(rest);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects when receiptStorageId is empty string", () => {
+    const result = submitExpenseSchema.safeParse({
+      ...validExpenseForm,
+      receiptStorageId: "",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ── withdrawExpenseSchema ──────────────────────────────────────────────────
+
+describe("withdrawExpenseSchema", () => {
+  it("accepts valid expenseId", () => {
+    const result = withdrawExpenseSchema.safeParse({ expenseId: "expense-abc123" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing expenseId", () => {
+    const result = withdrawExpenseSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty expenseId", () => {
+    const result = withdrawExpenseSchema.safeParse({ expenseId: "" });
     expect(result.success).toBe(false);
   });
 });

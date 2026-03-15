@@ -145,11 +145,11 @@ export function validateCurrencyCode(code: string): void {
 }
 
 /**
- * Validates that an amount is a positive finite number.
+ * Validates that an amount is a positive integer (stored as cents).
  */
 export function validateAmount(amount: number): void {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new ConvexError("Amount must be a positive finite number");
+  if (!Number.isInteger(amount) || amount <= 0) {
+    throw new ConvexError("Amount must be a positive integer (in cents)");
   }
 }
 

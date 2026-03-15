@@ -122,8 +122,8 @@ export function ExpenseDetailModal({
             <>
               <DialogTitle className="sr-only">Loading expense</DialogTitle>
               <DialogDescription className="sr-only">Loading expense details</DialogDescription>
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-12" role="status" aria-label="Loading expense details">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
               </div>
             </>
           ) : (
@@ -191,7 +191,7 @@ export function ExpenseDetailModal({
                     <div>
                       <span className="text-xs text-muted-foreground uppercase tracking-wide">Amount</span>
                       <p className="text-sm font-medium mt-0.5">
-                        {displayVersion != null ? formatAmount(displayVersion.amount) : ""} {displayVersion?.currencyCode}
+                        {displayVersion != null ? formatAmount(displayVersion.amount / 100) : ""} {displayVersion?.currencyCode}
                       </p>
                     </div>
                     <div>
@@ -233,7 +233,7 @@ export function ExpenseDetailModal({
                 )}
 
                 {(status === "Rejected" || status === "Closed") && (
-                  <div className={`rounded-xl border p-4 text-sm ${status === "Rejected" ? "border-orange-200 bg-orange-50" : "border-red-200 bg-red-50"}`}>
+                  <div role="status" className={`rounded-xl border p-4 text-sm ${status === "Rejected" ? "border-orange-200 bg-orange-50" : "border-red-200 bg-red-50"}`}>
                     <p className={`text-xs uppercase tracking-wide font-medium mb-1 ${status === "Rejected" ? "text-orange-700" : "text-red-700"}`}>
                       {status === "Rejected" ? "Rejected" : "Closed"}
                       {status === "Rejected" && expense?.rejectionReason ? `: ${expense.rejectionReason}` : ""}
@@ -330,7 +330,7 @@ export function ExpenseDetailModal({
           <AlertDialogHeader>
             <AlertDialogTitle>Withdraw Expense</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to withdraw this ticket? This action cannot be undone.
+              Are you sure you want to withdraw &ldquo;{displayVersion?.title ?? "this expense"}&rdquo;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -387,12 +387,12 @@ function ReceiptPreview({
   return (
     <div className="text-sm">
       <span className="text-xs text-muted-foreground uppercase tracking-wide">Receipt</span>
-      <div className="mt-1 h-48 w-full rounded border bg-muted flex items-center justify-center overflow-hidden">
+      <div className="mt-1 h-48 w-full rounded border bg-muted flex items-center justify-center overflow-hidden" aria-busy={!url}>
         {!url ? (
-          <Skeleton className="h-full w-full" />
+          <Skeleton className="h-full w-full" aria-label="Loading receipt" />
         ) : (
-          <a href={url} target="_blank" rel="noopener noreferrer" className="h-full w-full flex items-center justify-center">
-            <img src={url} alt="Receipt" className="max-h-full max-w-full object-contain cursor-pointer hover:opacity-80" />
+          <a href={url} target="_blank" rel="noopener noreferrer" aria-label="View receipt (opens in new tab)" className="h-full w-full flex items-center justify-center">
+            <img src={url} alt="Expense receipt document" className="max-h-full max-w-full object-contain cursor-pointer hover:opacity-80" />
           </a>
         )}
       </div>

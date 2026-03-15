@@ -7,6 +7,20 @@ import {
   validateAmount,
   validateStringLength,
 } from "./authHelpers";
+import { ACCEPTED_RECEIPT_TYPES, MAX_RECEIPT_SIZE_BYTES } from "../lib/constants";
+
+async function validateReceiptFile(ctx: any, storageId: string): Promise<void> {
+  const metadata = await ctx.storage.getMetadata(storageId);
+  if (!metadata) {
+    throw new ConvexError("Receipt file not found in storage");
+  }
+  if (!(ACCEPTED_RECEIPT_TYPES as readonly string[]).includes(metadata.contentType ?? "")) {
+    throw new ConvexError("Receipt must be a JPEG, PNG, or WEBP image");
+  }
+  if (metadata.size > MAX_RECEIPT_SIZE_BYTES) {
+    throw new ConvexError("Receipt file must be under 5 MB");
+  }
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -153,6 +167,9 @@ export const submitExpense = mutation({
     if (!draftVersion.receiptStorageId) {
       throw new ConvexError("Receipt is required for submission");
     }
+
+    // Server-side receipt file type and size validation
+    await validateReceiptFile(ctx, draftVersion.receiptStorageId);
 
     if (!draftVersion.title || !draftVersion.description || !draftVersion.amount || !draftVersion.currencyCode || !draftVersion.expenseDate) {
       throw new ConvexError("All required fields must be filled before submission");
@@ -330,6 +347,9 @@ export const resubmitExpense = mutation({
     if (!draftVersion.receiptStorageId) {
       throw new ConvexError("Receipt is required for submission");
     }
+
+    // Server-side receipt file type and size validation
+    await validateReceiptFile(ctx, draftVersion.receiptStorageId);
 
     if (!draftVersion.title || !draftVersion.description || !draftVersion.amount || !draftVersion.currencyCode || !draftVersion.expenseDate) {
       throw new ConvexError("All required fields must be filled before submission");

@@ -73,38 +73,43 @@ export default function DashboardLayout({
   // Loading state — also shown during sign-out to unmount children and stop their queries
   if (signingOut || user === undefined || user === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex min-h-screen items-center justify-center" role="status" aria-label="Loading">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" aria-hidden="true" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-100">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-indigo-700 focus:shadow">
+        Skip to main content
+      </a>
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <Receipt className="h-8 w-8 text-primary" />
+          <div className="flex items-center gap-3" aria-label="Budgy — Internal Expense Tracker">
+            <Receipt className="h-8 w-8 text-primary" aria-hidden="true" />
             <div className="flex flex-col leading-tight">
               <span className="text-xl font-bold">Budgy</span>
               <span className="text-xs text-muted-foreground">Internal Expense Tracker</span>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs rounded-full px-2 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 capitalize">
-              {user.role}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {user.firstName} {user.lastName}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-1" />
-              Sign out
-            </Button>
-          </div>
+          <nav aria-label="User menu">
+            <div className="flex items-center gap-4">
+              <span className="text-xs rounded-full px-2 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 capitalize" aria-label={`Role: ${user.role}`}>
+                {user.role}
+              </span>
+              <span className="text-sm text-muted-foreground" aria-label={`Signed in as ${user.firstName} ${user.lastName}`}>
+                {user.firstName} {user.lastName}
+              </span>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-1" aria-hidden="true" />
+                Sign out
+              </Button>
+            </div>
+          </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <TooltipProvider>
           {children}
         </TooltipProvider>

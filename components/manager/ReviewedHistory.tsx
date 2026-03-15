@@ -72,7 +72,8 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
 
   const amountBounds = useMemo(() => {
     if (!reviewed || reviewed.length === 0) return { min: 0, max: 5000 };
-    const amounts = reviewed.map((e: { amount: number }) => e.amount ?? 0);
+    // amounts are stored in cents; compute slider bounds in dollars
+    const amounts = reviewed.map((e: { amount: number }) => (e.amount ?? 0) / 100);
     return { min: 0, max: Math.ceil(Math.max(...amounts) / 100) * 100 || 5000 };
   }, [reviewed]);
 
@@ -97,7 +98,8 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
         if (!catName || !selectedCategories.includes(catName)) return false;
       }
       if (amountRange) {
-        if (r.amount < amountRange[0] || r.amount > amountRange[1]) return false;
+        const amountDollars = (r.amount ?? 0) / 100;
+        if (amountDollars < amountRange[0] || amountDollars > amountRange[1]) return false;
       }
       const decidedAt = r.approvedAt ?? r.rejectedAt ?? r.closedAt ?? r.updatedAt;
       if (dateRange?.from) {
@@ -132,7 +134,7 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
         accessorKey: "amount",
         header: "Amount",
         cell: ({ row }) =>
-          `${formatAmount(row.original.amount)} ${row.original.currencyCode}`,
+          `${formatAmount(row.original.amount / 100)} ${row.original.currencyCode}`,
       },
       {
         accessorKey: "status",
@@ -212,7 +214,9 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3 mt-4 mb-2">
         {/* Name search */}
+        <label htmlFor="history-name-search" className="sr-only">Search by employee name</label>
         <Input
+          id="history-name-search"
           placeholder="Search by employee name..."
           value={nameSearch}
           onChange={(e) => setNameSearch(e.target.value)}
@@ -283,13 +287,17 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
+                    scope="col"
                     className="px-4 py-3 text-left text-sm font-medium text-gray-600 cursor-pointer select-none"
                     onClick={header.column.getToggleSortingHandler()}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); header.column.getToggleSortingHandler()?.(e); } }}
+                    tabIndex={header.column.getCanSort() ? 0 : undefined}
+                    aria-sort={header.column.getIsSorted() === "asc" ? "ascending" : header.column.getIsSorted() === "desc" ? "descending" : header.column.getCanSort() ? "none" : undefined}
                   >
                     <div className="flex items-center gap-1">
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() === "asc" ? " ↑" : ""}
-                      {header.column.getIsSorted() === "desc" ? " ↓" : ""}
+                      {header.column.getIsSorted() === "asc" && <span aria-hidden="true"> ↑</span>}
+                      {header.column.getIsSorted() === "desc" && <span aria-hidden="true"> ↓</span>}
                     </div>
                   </th>
                 ))}
@@ -309,6 +317,10 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
                   key={row.id}
                   className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => setReviewExpenseId(row.original._id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setReviewExpenseId(row.original._id); }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`View reviewed expense: ${row.original.title} from ${row.original.submitterName}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-3 text-sm align-middle">

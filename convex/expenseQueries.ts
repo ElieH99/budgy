@@ -91,11 +91,11 @@ export const getExpenseDetail = query({
     if (expense.closedBy) userIds.add(expense.closedBy);
     history.forEach((h) => userIds.add(h.changedBy));
 
-    const usersMap: Record<string, { firstName: string; lastName: string }> = {};
+    const usersMap: Record<string, { firstName: string; lastName: string; role?: string }> = {};
     for (const id of userIds) {
       const u = await ctx.db.get(id as Id<"users">);
       if (u) {
-        usersMap[id] = { firstName: u.firstName, lastName: u.lastName };
+        usersMap[id] = { firstName: u.firstName, lastName: u.lastName, role: u.role };
       }
     }
 
@@ -197,7 +197,11 @@ export const getPendingQueue = query({
  */
 export const getReviewedHistory = query({
   args: {
-    statusFilter: v.optional(v.string()),
+    statusFilter: v.optional(v.union(
+      v.literal("Approved"),
+      v.literal("Rejected"),
+      v.literal("Closed"),
+    )),
     categoryFilter: v.optional(v.id("categories")),
     employeeFilter: v.optional(v.id("users")),
   },
@@ -306,7 +310,7 @@ export const getManagerStats = query({
     ).length;
 
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
 
     const approved = await ctx.db
       .query("expenses")
