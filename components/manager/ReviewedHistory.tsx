@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -46,9 +46,10 @@ interface ReviewedHistoryProps {
   /** Controlled multi-select status filter. Empty array = no filter. */
   selectedStatuses?: string[];
   onSelectedStatusesChange?: (statuses: string[]) => void;
+  isActive?: boolean;
 }
 
-export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSelectedStatusesChange }: ReviewedHistoryProps = {}) {
+export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSelectedStatusesChange, isActive = true }: ReviewedHistoryProps = {}) {
   const categories = useQuery(api.categories.listCategories);
 
   const [internalSelectedStatuses, setInternalSelectedStatuses] = useState<string[]>([]);
@@ -62,6 +63,11 @@ export function ReviewedHistory({ selectedStatuses: selectedStatusesProp, onSele
     { id: "decidedOn", desc: true },
   ]);
   const [reviewExpenseId, setReviewExpenseId] = useState<Id<"expenses"> | null>(null);
+
+  // Close modal when the tab is hidden to prevent ghost opens on tab switch
+  useEffect(() => {
+    if (!isActive) setReviewExpenseId(null);
+  }, [isActive]);
 
   const reviewed = useQuery(api.expenses.getReviewedHistory, {});
 

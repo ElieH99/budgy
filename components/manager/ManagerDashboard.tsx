@@ -62,12 +62,13 @@ export function ManagerDashboard() {
           <TabsTrigger value="my-expenses">My Submissions</TabsTrigger>
         </TabsList>
         <TabsContent value="pending" className="min-h-[420px]">
-          <PendingQueue />
+          <PendingQueue isActive={activeTab === "pending"} />
         </TabsContent>
         <TabsContent value="history" className="min-h-[420px]">
           <ReviewedHistory
             selectedStatuses={historySelectedStatuses}
             onSelectedStatusesChange={setHistorySelectedStatuses}
+            isActive={activeTab === "history"}
           />
         </TabsContent>
         <TabsContent value="my-expenses" className="min-h-[420px]">

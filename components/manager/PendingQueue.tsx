@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -45,13 +45,18 @@ interface PendingRow {
   status: string;
 }
 
-export function PendingQueue() {
+export function PendingQueue({ isActive = true }: { isActive?: boolean }) {
   const pending = useQuery(api.expenses.getPendingQueue);
   const categories = useQuery(api.categories.listCategories);
   const [sorting, setSorting] = useState<SortingState>([
     { id: "submittedAt", desc: false },
   ]);
   const [reviewIndex, setReviewIndex] = useState<number | null>(null);
+
+  // Close modal when the tab is hidden to prevent ghost opens on tab switch
+  useEffect(() => {
+    if (!isActive) setReviewIndex(null);
+  }, [isActive]);
 
   const [amountRange, setAmountRange] = useState<[number, number] | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
