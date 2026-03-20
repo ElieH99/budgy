@@ -330,7 +330,7 @@ export const getManagerStats = query({
           q.eq("expenseId", expense._id).eq("versionNumber", expense.currentVersion)
         )
         .unique();
-      approvedBudgetThisMonth += version?.amount ?? 0;
+      approvedBudgetThisMonth += (version?.amount ?? 0) / 100;
     }
 
     const rejected = await ctx.db
